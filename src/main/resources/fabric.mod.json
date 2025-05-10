@@ -9,8 +9,9 @@
 		"Pixel Dream Studios"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://www.curseforge.com/minecraft/mc-mods/kevs-attributes-panel",
+		"sources": "https://github.com/KevzCz/Kev-s-Attributes-Panel",
+		"issues": "https://github.com/KevzCz/Kev-s-Attributes-Panel/issues"
 	},
 	"custom": {
 		"modmenu:api": true
