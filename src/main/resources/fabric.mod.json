@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "kevs-attributes-panel",
+	"version": "${version}",
+	"name": "Kev's Attributes Panel",
+	"description": "Adds an attribute panel!",
+	"authors": [
+		"KevzCz",
+		"Pixel Dream Studios"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"custom": {
+		"modmenu:api": true
+	},
+	"license": "MIT",
+	"icon": "assets/kevs-attributes-panel/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["net.pixeldreamstudios.attributepanel.KevsAttributesPanel"],
+		"client": ["net.pixeldreamstudios.attributepanel.client.KevsAttributesPanelClient"],
+		"modmenu": ["net.pixeldreamstudios.attributepanel.config.AttributesPanelModMenu"]
+	},
+
+	"mixins": [
+		"kevs-attributes-panel.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.14",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*",
+		"kevslibrary": ">=1.4.0"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}
