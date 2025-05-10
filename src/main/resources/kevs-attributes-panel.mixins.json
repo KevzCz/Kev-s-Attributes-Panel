@@ -5,6 +5,7 @@
 	"mixins": [
 		"InventoryScreenMixin"
 	],
+
 	"injectors": {
 		"defaultRequire": 1
 	}

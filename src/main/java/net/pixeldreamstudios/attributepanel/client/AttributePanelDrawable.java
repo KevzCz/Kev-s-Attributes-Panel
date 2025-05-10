@@ -493,27 +493,43 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                     ItemStack stack = client.player.getEquippedStack(slot);
                     if (stack.isEmpty()) continue;
 
-                    boolean[] matched = {false};
+                    final boolean[] matched = {false};
                     var component = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
                     if (component != null) {
                         component.applyModifiers(slot, (attr, entryMod) -> {
-                            if (entryMod.id().equals(modId)) matched[0] = true;
+                            if (entryMod.id().equals(mod.id()) && attr.equals(stat.attribute())) {
+                                matched[0] = true;
+                            }
                         });
                     }
 
                     if (!matched[0]) {
                         stack.getItem().getAttributeModifiers().applyModifiers(slot, (attr, entryMod) -> {
-                            if (entryMod.id().equals(modId)) matched[0] = true;
+                            if (entryMod.id().equals(mod.id()) && attr.equals(stat.attribute())) {
+                                matched[0] = true;
+                            }
                         });
                     }
 
                     if (matched[0]) {
                         matchingStack = stack;
-                        displayName = stack.getName();
+                        if (!stack.isEmpty() && stack.getItem() != Items.AIR) {
+                            try {
+                                String translationKey = stack.getTranslationKey();
+                                displayName = Text.translatable(translationKey)
+                                        .copy()
+                                        .formatted(stack.getRarity().getFormatting());
+                            } catch (Exception e) {
+                                // fallback just in case something breaks
+                                displayName = Text.literal(stack.getItem().toString()).formatted(Formatting.GRAY);
+                            }
+                        }
+
                         foundSource = true;
                         break;
                     }
                 }
+
 
                 if (!foundSource && FabricLoader.getInstance().isModLoaded("trinkets")) {
                     for (Iterator<TrinketCompat.TrinketModifierSource> iter = unmatchedTrinketSources.iterator(); iter.hasNext(); ) {
@@ -529,7 +545,8 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                     if (!foundSource) {
                         for (Iterator<TrinketCompat.TrinketModifierSource> iter = unmatchedTrinketSources.iterator(); iter.hasNext(); ) {
                             var source = iter.next();
-                            if (source.modifier().operation() == mod.operation() &&
+                            if (source.id().equals(stat.attribute()) &&
+                                    source.modifier().operation() == mod.operation() &&
                                     Math.abs(source.modifier().value() - mod.value()) < 0.0001) {
                                 matchingStack = source.stack();
                                 displayName = matchingStack.getName().copy().formatted(matchingStack.getRarity().getFormatting());
@@ -539,6 +556,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                             }
                         }
                     }
+
                 }
 
                 if (!foundSource) {
@@ -579,7 +597,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                         }
                     }
                 }
-                if (customName != null) {
+                if (!foundSource && customName != null) {
                     String pretty = Arrays.stream(customName.split("_"))
                             .map(s -> s.substring(0,1).toUpperCase() + s.substring(1).toLowerCase())
                             .collect(Collectors.joining(" "));
