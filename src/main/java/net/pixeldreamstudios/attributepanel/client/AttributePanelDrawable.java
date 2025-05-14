@@ -48,6 +48,9 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
     private int height;
     @Unique
     private List<Text> queuedTooltip = null;
+
+    private static final Identifier INFO_ICON = Identifier.of("kevs-attributes-panel", "textures/gui/attribute_book.png");
+    private static final int INFO_ICON_SIZE = 16;
     @Unique
     private int tooltipX, tooltipY;
 
@@ -280,6 +283,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         }
 
         drawVanillaTooltipButton(context, tr, hoverIndex, mouseX, mouseY, rowHeight, padding);
+
     }
 
     private void renderBookLayout(DrawContext context, int mouseX, int mouseY) {
@@ -352,9 +356,88 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 hoverIndex = i;
             }
         }
+        int infoX = x + width - INFO_ICON_SIZE - 95;
+        int infoY = y + 10;
+
+        int textureWidth = 8;
+        int textureHeight = 8;
+        context.drawTexture(INFO_ICON, infoX, infoY, 0, 0, textureWidth, textureHeight, textureWidth, textureHeight);
+
+
+        if (mouseX >= infoX && mouseX <= infoX + INFO_ICON_SIZE &&
+                mouseY >= infoY && mouseY <= infoY + INFO_ICON_SIZE) {
+            drawGlobalBonusTooltip(mouseX, mouseY);
+        }
 
         drawBookTooltipButton(context, tr, hoverIndex, mouseX, mouseY, rowHeight, padding);
     }
+    private void drawGlobalBonusTooltip(int mouseX, int mouseY) {
+        PlayerEntity player = client.player;
+        if (player == null) return;
+
+        Map<String, Double> flatMap = new TreeMap<>();
+        Map<String, Double> baseMultMap = new TreeMap<>();
+        Map<String, Double> totalMultMap = new TreeMap<>();
+
+        for (RegistryEntry<EntityAttribute> entry : Registries.ATTRIBUTE.streamEntries().toList()) {
+            EntityAttribute attr = entry.value();
+            EntityAttributeInstance instance = player.getAttributeInstance(entry);
+            if (instance == null || instance.getModifiers().isEmpty()) continue;
+
+            String attrName = Text.translatable(attr.getTranslationKey()).getString();
+
+            for (EntityAttributeModifier mod : instance.getModifiers()) {
+                double value = mod.value();
+                if (Math.abs(value) < 0.0001) continue;
+
+                switch (mod.operation()) {
+                    case ADD_VALUE -> flatMap.merge(attrName, value, Double::sum);
+                    case ADD_MULTIPLIED_BASE -> baseMultMap.merge(attrName, value, Double::sum);
+                    case ADD_MULTIPLIED_TOTAL -> totalMultMap.merge(attrName, value, Double::sum);
+                }
+            }
+        }
+
+        List<Text> lines = new ArrayList<>();
+        List<ItemStack> icons = new ArrayList<>();
+
+        lines.add(Text.literal("Bonuses:").formatted(Formatting.GOLD));
+        icons.add(ItemStack.EMPTY);
+
+        boolean addedAny = false;
+
+        for (String attr : flatMap.keySet()) {
+            double value = flatMap.get(attr);
+            lines.add(Text.literal(String.format("- %s: %+,.2f", attr, value)).formatted(Formatting.GREEN));
+            icons.add(ItemStack.EMPTY);
+            addedAny = true;
+        }
+
+        for (String attr : baseMultMap.keySet()) {
+            double value = baseMultMap.get(attr);
+            lines.add(Text.literal(String.format("- %s: %+d%% Base", attr, (int)(value * 100))).formatted(Formatting.GREEN));
+            icons.add(ItemStack.EMPTY);
+            addedAny = true;
+        }
+
+        for (String attr : totalMultMap.keySet()) {
+            double value = totalMultMap.get(attr);
+            lines.add(Text.literal(String.format("- %s: %+d%% Total", attr, (int)(value * 100))).formatted(Formatting.GREEN));
+            icons.add(ItemStack.EMPTY);
+            addedAny = true;
+        }
+
+        if (!addedAny) {
+            lines.add(Text.literal("No active modifiers").formatted(Formatting.GRAY));
+            icons.add(ItemStack.EMPTY);
+        }
+
+        this.queuedTooltip = lines;
+        this.queuedTooltipIcons = icons;
+        this.tooltipX = mouseX;
+        this.tooltipY = mouseY;
+    }
+
 
     private void drawVanillaTooltipButton(DrawContext context, TextRenderer tr, int hoverIndex, int mouseX, int mouseY, int rowHeight, int padding) {
         drawTooltipContent(context, tr, hoverIndex, mouseX, mouseY, rowHeight, padding);
@@ -419,6 +502,9 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         }
 
         double flat = 0.0, multBase = 0.0, multTotal = 0.0;
+        double puffFlat = 0.0, puffBase = 0.0, puffTotal = 0.0;
+        boolean hasPuffish = false;
+
         List<TrinketCompat.TrinketModifierSource> unmatchedTrinketSources = new ArrayList<>();
         if (FabricLoader.getInstance().isModLoaded("trinkets")) {
             unmatchedTrinketSources.addAll(TrinketCompat.getTrinketModifierSources(client.player));
@@ -431,6 +517,17 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
             iconStacks.add(ItemStack.EMPTY);
 
             for (EntityAttributeModifier mod : instance.getModifiers()) {
+                Identifier rawId = mod.id();
+                if (rawId.getNamespace().equals("puffish_skills")) {
+                    hasPuffish = true;
+                    switch (mod.operation()) {
+                        case ADD_VALUE -> puffFlat += mod.value();
+                        case ADD_MULTIPLIED_BASE -> puffBase += mod.value();
+                        case ADD_MULTIPLIED_TOTAL -> puffTotal += mod.value();
+                    }
+                    continue;
+                }
+
                 String opText;
                 Formatting color;
 
@@ -453,7 +550,6 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                         int percent = (int) Math.round(value * 100);
                         color = percent >= 0 ? Formatting.GREEN : Formatting.RED;
                         String sign = percent >= 0 ? "+" : "";
-
                         opText = sign + percent + "% Base";
                     }
 
@@ -465,7 +561,6 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                         int percent = (int) Math.round(value * 100);
                         color = percent >= 0 ? Formatting.GREEN : Formatting.RED;
                         String sign = percent >= 0 ? "+" : "";
-
                         opText = sign + percent + "% Total";
                     }
 
@@ -475,19 +570,14 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                     }
                 }
 
-
-
-
-
-                Identifier rawId    = mod.id();
-                String     fullPath = rawId.getPath();
-                String[]   parts    = fullPath.split("\\.", 2);
-                Identifier modId    = Identifier.of(rawId.getNamespace(), parts[0]);
-                String     customName = parts.length > 1 ? parts[1] : null;
-
+                String fullPath = rawId.getPath();
+                String[] parts = fullPath.split("\\.", 2);
+                Identifier modId = Identifier.of(rawId.getNamespace(), parts[0]);
+                String customName = parts.length > 1 ? parts[1] : null;
+                boolean usedCustomName = false;
                 ItemStack matchingStack = new ItemStack(Registries.ITEM.get(modId));
-                Text displayName       = Text.literal(formatModifierId(modId));
-                boolean foundSource    = false;
+                Text displayName = Text.literal(formatModifierId(modId));
+                boolean foundSource = false;
 
                 for (EquipmentSlot slot : EquipmentSlot.values()) {
                     ItemStack stack = client.player.getEquippedStack(slot);
@@ -513,50 +603,16 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
 
                     if (matched[0]) {
                         matchingStack = stack;
-                        if (!stack.isEmpty() && stack.getItem() != Items.AIR) {
+                        if (!stack.isEmpty() && stack.getItem() != Items.AIR && !usedCustomName) {
                             try {
-                                String translationKey = stack.getTranslationKey();
-                                displayName = Text.translatable(translationKey)
-                                        .copy()
-                                        .formatted(stack.getRarity().getFormatting());
+                                displayName = stack.getName().copy();
                             } catch (Exception e) {
-                                // fallback just in case something breaks
                                 displayName = Text.literal(stack.getItem().toString()).formatted(Formatting.GRAY);
                             }
                         }
-
                         foundSource = true;
                         break;
                     }
-                }
-
-
-                if (!foundSource && FabricLoader.getInstance().isModLoaded("trinkets")) {
-                    for (Iterator<TrinketCompat.TrinketModifierSource> iter = unmatchedTrinketSources.iterator(); iter.hasNext(); ) {
-                        var source = iter.next();
-                        if (source.modifier().id().equals(mod.id())) {
-                            matchingStack = source.stack();
-                            displayName = matchingStack.getName().copy().formatted(matchingStack.getRarity().getFormatting());
-                            foundSource = true;
-                            iter.remove();
-                            break;
-                        }
-                    }
-                    if (!foundSource) {
-                        for (Iterator<TrinketCompat.TrinketModifierSource> iter = unmatchedTrinketSources.iterator(); iter.hasNext(); ) {
-                            var source = iter.next();
-                            if (source.id().equals(stat.attribute()) &&
-                                    source.modifier().operation() == mod.operation() &&
-                                    Math.abs(source.modifier().value() - mod.value()) < 0.0001) {
-                                matchingStack = source.stack();
-                                displayName = matchingStack.getName().copy().formatted(matchingStack.getRarity().getFormatting());
-                                foundSource = true;
-                                iter.remove();
-                                break;
-                            }
-                        }
-                    }
-
                 }
 
                 if (!foundSource) {
@@ -569,6 +625,30 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                             matchingStack = new ItemStack(item);
                             displayName = matchingStack.getName().copy().formatted(matchingStack.getRarity().getFormatting());
                             foundSource = true;
+                        }
+                    }
+                }
+
+                if (customName != null && !customName.isBlank()) {
+                    Set<String> ignoredArmorNames = Set.of("helmet", "chestplate", "leggings", "boots");
+                    if (!ignoredArmorNames.contains(customName.toLowerCase())) {
+                        String pretty = Arrays.stream(customName.split("_"))
+                                .map(s -> s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase())
+                                .collect(Collectors.joining(" "));
+                        displayName = Text.literal(pretty).formatted(Formatting.LIGHT_PURPLE);
+                        usedCustomName = true;
+                    }
+                }
+
+                if (!foundSource && FabricLoader.getInstance().isModLoaded("trinkets")) {
+                    for (Iterator<TrinketCompat.TrinketModifierSource> iter = unmatchedTrinketSources.iterator(); iter.hasNext(); ) {
+                        var source = iter.next();
+                        if (source.modifier().id().equals(mod.id())) {
+                            matchingStack = source.stack();
+                            displayName = matchingStack.getName().copy().formatted(matchingStack.getRarity().getFormatting());
+                            foundSource = true;
+                            iter.remove();
+                            break;
                         }
                     }
                 }
@@ -586,7 +666,6 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
 
                         if (effectMods.containsKey(attr)) {
                             EntityAttributeModifier potionMod = effectMods.get(attr);
-
                             if (potionMod.operation() == mod.operation() &&
                                     Math.abs(potionMod.value() - mod.value()) < 0.0001) {
                                 displayName = Text.translatable(effect.getTranslationKey());
@@ -597,12 +676,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                         }
                     }
                 }
-                if (!foundSource && customName != null) {
-                    String pretty = Arrays.stream(customName.split("_"))
-                            .map(s -> s.substring(0,1).toUpperCase() + s.substring(1).toLowerCase())
-                            .collect(Collectors.joining(" "));
-                    displayName = Text.literal(pretty).formatted(Formatting.LIGHT_PURPLE);
-                }
+
                 if (modId.getNamespace().equals("tiered")) {
                     String path = modId.getPath();
                     String[] pathParts = path.split("_");
@@ -611,19 +685,39 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
 
                     Text tierLine = Text.literal(tierName + " Tier Bonus: ").formatted(Formatting.AQUA)
                             .append(Text.literal(opText).formatted(Formatting.GREEN));
-
                     tooltipLines.add(tierLine);
                     iconStacks.add(new ItemStack(Items.ANVIL));
                 } else {
                     Text displayLine = displayName.copy()
                             .append(" ")
                             .append(Text.literal(opText).formatted(color));
-
                     tooltipLines.add(displayLine);
                     iconStacks.add(matchingStack);
                 }
             }
 
+            if (hasPuffish) {
+                tooltipLines.add(Text.literal("Skill Tree Bonus:").formatted(Formatting.AQUA));
+                iconStacks.add(ItemStack.EMPTY);
+
+                if (puffFlat != 0.0) {
+                    tooltipLines.add(Text.literal(String.format("- %+,.2f", puffFlat)).formatted(Formatting.GREEN));
+                    iconStacks.add(ItemStack.EMPTY);
+                }
+
+                if (puffBase != 0.0) {
+                    tooltipLines.add(Text.literal(String.format("- %+d%% Base", (int)(puffBase * 100))).formatted(Formatting.GREEN));
+                    iconStacks.add(ItemStack.EMPTY);
+                }
+
+                if (puffTotal != 0.0) {
+                    tooltipLines.add(Text.literal(String.format("- %+d%% Total", (int)(puffTotal * 100))).formatted(Formatting.GREEN));
+                    iconStacks.add(ItemStack.EMPTY);
+                }
+
+                tooltipLines.add(Text.empty());
+                iconStacks.add(ItemStack.EMPTY);
+            }
         } else if (stat.isChanged()) {
             tooltipLines.add(Text.literal("Hold \u21E7 Shift to show calculation").formatted(Formatting.GRAY));
             iconStacks.add(ItemStack.EMPTY);
@@ -635,7 +729,6 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
             if (shiftDown) {
                 double base = stat.base();
                 double flatTotal = flat;
-
                 double tieredMultTotal = 0.0;
                 double nonTieredMultTotal = 0.0;
 
@@ -664,23 +757,15 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                     String flatBreakdown = flatComponents.stream()
                             .map(v -> String.format("%.2f", v))
                             .reduce((a, b) -> a + " + " + b).orElse("0.00");
-
-                    tooltipLines.add(Text.literal(
-                                    String.format("⟶ %.2f + (%s) = %.2f", base, flatBreakdown, basePlusAdditive))
-                            .formatted(Formatting.GRAY));
-
+                    tooltipLines.add(Text.literal(String.format("⟶ %.2f + (%s) = %.2f", base, flatBreakdown, basePlusAdditive)).formatted(Formatting.GRAY));
                     iconStacks.add(ItemStack.EMPTY);
                 } else {
-                    tooltipLines.add(Text.literal(
-                                    String.format("= %.2f", base))
-                            .formatted(Formatting.GRAY));
+                    tooltipLines.add(Text.literal(String.format("= %.2f", base)).formatted(Formatting.GRAY));
                     iconStacks.add(ItemStack.EMPTY);
                 }
 
                 if (tieredMultTotal != 0.0) {
-                    tooltipLines.add(Text.literal(
-                                    String.format("⟶ %.2f × %.2f = %.2f", basePlusAdditive, 1.0 + tieredMultTotal, afterTiered))
-                            .formatted(Formatting.GRAY));
+                    tooltipLines.add(Text.literal(String.format("⟶ %.2f × %.2f = %.2f", basePlusAdditive, 1.0 + tieredMultTotal, afterTiered)).formatted(Formatting.GRAY));
                     iconStacks.add(ItemStack.EMPTY);
                 }
 
@@ -688,15 +773,11 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                     String baseMultBreakdown = baseMultComponents.stream()
                             .map(v -> String.format("%.2f", v))
                             .reduce((a, b) -> a + " + " + b).orElse("0.00");
-
-                    tooltipLines.add(Text.literal(
-                                    String.format("⟶ %.2f × (1.00 + %s) = %.2f", afterTiered, baseMultBreakdown, afterBaseMult))
-                            .formatted(Formatting.GRAY));
+                    tooltipLines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %s) = %.2f", afterTiered, baseMultBreakdown, afterBaseMult)).formatted(Formatting.GRAY));
                     iconStacks.add(ItemStack.EMPTY);
                 }
 
                 if (nonTieredMultTotal != 0.0) {
-
                     List<Double> nonTieredTotalComponents = new ArrayList<>();
                     for (EntityAttributeModifier mod : instance.getModifiers()) {
                         if (mod.operation() == EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL &&
@@ -710,15 +791,11 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                             .reduce((a, b) -> a + " + " + b).orElse("0.00");
 
                     if (!nonTieredTotalComponents.isEmpty()) {
-                        tooltipLines.add(Text.literal(
-                                        String.format("⟶ %.2f × (1.00 + %s) = %.2f", afterBaseMult, totalMultBreakdown, finalValue))
-                                .formatted(Formatting.GRAY));
+                        tooltipLines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %s) = %.2f", afterBaseMult, totalMultBreakdown, finalValue)).formatted(Formatting.GRAY));
                     }
-
                 }
 
-                tooltipLines.add(Text.literal("= " + String.format("%.2f", finalValue))
-                        .formatted(Formatting.GREEN));
+                tooltipLines.add(Text.literal("= " + String.format("%.2f", finalValue)).formatted(Formatting.GREEN));
                 iconStacks.add(ItemStack.EMPTY);
 
             } else {
@@ -732,6 +809,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         this.tooltipX = mouseX;
         this.tooltipY = mouseY;
     }
+
 
 
     private ItemStack createColoredPotionItem(StatusEffect effect) {
