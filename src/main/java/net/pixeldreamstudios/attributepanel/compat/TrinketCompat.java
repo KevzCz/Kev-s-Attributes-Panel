@@ -9,11 +9,13 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.Identifier;
 
 import java.util.*;
 
 public class TrinketCompat {
-    public record TrinketModifierSource(ItemStack stack, EntityAttributeModifier modifier, RegistryEntry<EntityAttribute> id) {}
+    public record TrinketModifierSource(ItemStack stack, EntityAttributeModifier modifier, RegistryEntry<EntityAttribute> id, Identifier rawId) {}
+
     public static List<TrinketModifierSource> getTrinketModifierSources(PlayerEntity player) {
         List<TrinketModifierSource> results = new ArrayList<>();
         Optional<TrinketComponent> optComponent = TrinketsApi.getTrinketComponent(player);
@@ -31,7 +33,8 @@ public class TrinketCompat {
                     TrinketModifiers.get(stack, ref, player).entries();
 
             for (Map.Entry<RegistryEntry<EntityAttribute>, EntityAttributeModifier> entry : modifiers) {
-                results.add(new TrinketModifierSource(stack, entry.getValue(), entry.getKey()));
+                Identifier rawId = entry.getValue().id();
+                results.add(new TrinketModifierSource(stack, entry.getValue(), entry.getKey(), rawId));
             }
 
         }

@@ -179,6 +179,8 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                     || attr.getTranslationKey().contains("crit_damage")
                     || attr.getTranslationKey().contains("soul_link_damage")
                     || attr.getTranslationKey().contains("soul_link_chance")
+                    || attr.getTranslationKey().contains("multistrike_chance")
+                    || attr.getTranslationKey().contains("multistrike_damage")
                     || attr.getTranslationKey().contains("damage_multiplier");
 
             double base = instance.getBaseValue();
@@ -571,6 +573,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 }
 
                 String fullPath = rawId.getPath();
+                System.out.println("[DEBUG] Modifier rawId: " + rawId);
                 String[] parts = fullPath.split("\\.", 2);
                 Identifier modId = Identifier.of(rawId.getNamespace(), parts[0]);
                 String customName = parts.length > 1 ? parts[1] : null;
@@ -643,15 +646,35 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 if (!foundSource && FabricLoader.getInstance().isModLoaded("trinkets")) {
                     for (Iterator<TrinketCompat.TrinketModifierSource> iter = unmatchedTrinketSources.iterator(); iter.hasNext(); ) {
                         var source = iter.next();
-                        if (source.modifier().id().equals(mod.id())) {
+
+                        if (
+                                source.id().value().equals(stat.attribute().value()) &&
+                                        source.modifier().operation() == mod.operation() &&
+                                        Math.abs(source.modifier().value() - mod.value()) < 0.0001
+                        ) {
                             matchingStack = source.stack();
-                            displayName = matchingStack.getName().copy().formatted(matchingStack.getRarity().getFormatting());
+
+                            if (!matchingStack.isEmpty() && matchingStack.getItem() != Items.AIR) {
+                                try {
+                                    displayName = matchingStack.getName().copy()
+                                            .formatted(matchingStack.getRarity().getFormatting());
+                                } catch (Exception e) {
+                                    displayName = Text.literal("Unknown Trinket").formatted(Formatting.GRAY);
+                                }
+                            } else {
+                                displayName = Text.literal("Unknown Trinket").formatted(Formatting.GRAY);
+                            }
+
                             foundSource = true;
                             iter.remove();
                             break;
                         }
                     }
                 }
+
+
+
+
 
                 if (!foundSource) {
                     for (var entry : client.player.getStatusEffects()) {
