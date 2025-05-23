@@ -573,7 +573,6 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 }
 
                 String fullPath = rawId.getPath();
-                System.out.println("[DEBUG] Modifier rawId: " + rawId);
                 String[] parts = fullPath.split("\\.", 2);
                 Identifier modId = Identifier.of(rawId.getNamespace(), parts[0]);
                 String customName = parts.length > 1 ? parts[1] : null;

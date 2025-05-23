@@ -7,6 +7,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.RotationAxis;
 import net.pixeldreamstudios.attributepanel.client.AttributePanelDrawable;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,10 +16,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.joml.Vector3f;
 
 @Mixin(InventoryScreen.class)
 public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHandler> {
-
+    @Unique
+    private int attributespanel$iconTick = 0;
     @Unique
     private AttributePanelDrawable attributespanel$attributePanel;
 
@@ -40,6 +43,7 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
 
     @Inject(method = "render", at = @At("TAIL"))
     private void attributespanel$onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        attributespanel$iconTick++;
         if (attributespanel$attributePanel != null) {
             attributespanel$attributePanel.tick();
 
@@ -58,7 +62,25 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
                     ((color >> 24) & 0xFF) / 255f
             );
 
-            context.drawTexture(ATTRIBUTE_BOOK, buttonX, buttonY, 0, 0, iconSize, iconSize, 9, 9);
+            if (hovered) {
+                float time = attributespanel$iconTick / 8f;
+
+                float pulse = (float) Math.sin(time);
+                float scale = 1.0f + 0.1f * pulse; // gentle pulse
+                float rotation = 1.5f * pulse;     // gentle wobble
+
+                context.getMatrices().push();
+                context.getMatrices().translate(buttonX + iconSize / 2f, buttonY + iconSize / 2f, 0);
+                context.getMatrices().scale(scale, scale, 1f);
+                context.getMatrices().multiply(RotationAxis.POSITIVE_Z.rotationDegrees(rotation));
+                context.getMatrices().translate(-iconSize / 2f, -iconSize / 2f, 0);
+                context.drawTexture(ATTRIBUTE_BOOK, 0, 0, 0, 0, iconSize, iconSize, 9, 9);
+                context.getMatrices().pop();
+            } else {
+                context.drawTexture(ATTRIBUTE_BOOK, buttonX, buttonY, 0, 0, iconSize, iconSize, 9, 9);
+            }
+
+
             context.setShaderColor(1f, 1f, 1f, 1f);
 
             if (hovered) {
