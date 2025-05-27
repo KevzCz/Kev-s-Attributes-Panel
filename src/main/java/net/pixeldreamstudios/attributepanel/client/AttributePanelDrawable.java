@@ -520,6 +520,17 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
 
             for (EntityAttributeModifier mod : instance.getModifiers()) {
                 Identifier rawId = mod.id();
+
+                if (rawId.getNamespace().equals("tiered")) {
+                    String fullPath = rawId.getPath();
+                    String[] tieredParts = fullPath.split("/");
+
+                    if (tieredParts.length >= 3 && tieredParts[tieredParts.length - 1].contains("_")) {
+                        fullPath = tieredParts[tieredParts.length - 1];
+                        rawId = Identifier.of("tiered", fullPath);  // Normalize
+                    }
+                }
+
                 if (rawId.getNamespace().equals("puffish_skills")) {
                     hasPuffish = true;
                     switch (mod.operation()) {
@@ -580,7 +591,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 ItemStack matchingStack = new ItemStack(Registries.ITEM.get(modId));
                 Text displayName = Text.literal(formatModifierId(modId));
                 boolean foundSource = false;
-
+                System.out.println(rawId);
                 for (EquipmentSlot slot : EquipmentSlot.values()) {
                     ItemStack stack = client.player.getEquippedStack(slot);
                     if (stack.isEmpty()) continue;
@@ -705,7 +716,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                     String tierRarity = pathParts.length > 0 ? pathParts[0] : "Tiered";
                     String tierName = tierRarity.substring(0, 1).toUpperCase() + tierRarity.substring(1).toLowerCase();
 
-                    Text tierLine = Text.literal(tierName + " Tier Bonus: ").formatted(Formatting.AQUA)
+                    Text tierLine = Text.literal(tierName + " Bonus: ").formatted(Formatting.AQUA)
                             .append(Text.literal(opText).formatted(Formatting.GREEN));
                     tooltipLines.add(tierLine);
                     iconStacks.add(new ItemStack(Items.ANVIL));
