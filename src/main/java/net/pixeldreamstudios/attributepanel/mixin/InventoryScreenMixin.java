@@ -66,8 +66,8 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
                 float time = attributespanel$iconTick / 8f;
 
                 float pulse = (float) Math.sin(time);
-                float scale = 1.0f + 0.1f * pulse; // gentle pulse
-                float rotation = 1.5f * pulse;     // gentle wobble
+                float scale = 1.0f + 0.1f * pulse;
+                float rotation = 1.5f * pulse;
 
                 context.getMatrices().push();
                 context.getMatrices().translate(buttonX + iconSize / 2f, buttonY + iconSize / 2f, 0);

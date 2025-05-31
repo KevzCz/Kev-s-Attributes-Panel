@@ -591,7 +591,6 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 ItemStack matchingStack = new ItemStack(Registries.ITEM.get(modId));
                 Text displayName = Text.literal(formatModifierId(modId));
                 boolean foundSource = false;
-                System.out.println(rawId);
                 for (EquipmentSlot slot : EquipmentSlot.values()) {
                     ItemStack stack = client.player.getEquippedStack(slot);
                     if (stack.isEmpty()) continue;
