@@ -181,7 +181,8 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                     || attr.getTranslationKey().contains("soul_link_chance")
                     || attr.getTranslationKey().contains("multistrike_chance")
                     || attr.getTranslationKey().contains("multistrike_damage")
-                    || attr.getTranslationKey().contains("damage_multiplier");
+                    || attr.getTranslationKey().contains("damage_multiplier")
+                    || attr.getTranslationKey().contains("trident_damage_multiplier");
 
             double base = instance.getBaseValue();
             double value = instance.getValue();
@@ -829,6 +830,24 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
 
                 tooltipLines.add(Text.literal("= " + String.format("%.2f", finalValue)).formatted(Formatting.GREEN));
                 iconStacks.add(ItemStack.EMPTY);
+                if (instance != null) {
+                    double actualFinal = instance.getValue();
+                    double indirectFlatBonus = actualFinal - finalValue;
+
+                    // Avoid noise from floating-point precision
+                    if (Math.abs(indirectFlatBonus) > 0.001 && finalValue > 0.001) {
+                        double indirectPercent = indirectFlatBonus / finalValue;
+
+                        tooltipLines.add(Text.empty());
+                        iconStacks.add(ItemStack.EMPTY);
+
+                        tooltipLines.add(Text.literal(String.format("➤ Indirect bonus: +%.2f", indirectFlatBonus)).formatted(Formatting.DARK_GREEN));
+                        iconStacks.add(ItemStack.EMPTY);
+
+                        tooltipLines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %.2f) = %.2f", finalValue, indirectPercent, actualFinal)).formatted(Formatting.GRAY));
+                        iconStacks.add(ItemStack.EMPTY);
+                    }
+                }
 
             } else {
                 tooltipLines.add(Text.literal("Hold \u21E7 Shift to show calculation").formatted(Formatting.GRAY));
