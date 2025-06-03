@@ -751,9 +751,6 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 tooltipLines.add(Text.empty());
                 iconStacks.add(ItemStack.EMPTY);
             }
-        } else if (stat.isChanged()) {
-            tooltipLines.add(Text.literal("Hold \u21E7 Shift to show calculation").formatted(Formatting.GRAY));
-            iconStacks.add(ItemStack.EMPTY);
         }
 
         tooltipLines.add(Text.empty());
@@ -833,19 +830,23 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 if (instance != null) {
                     double actualFinal = instance.getValue();
                     double indirectFlatBonus = actualFinal - finalValue;
-
-                    // Avoid noise from floating-point precision
                     if (Math.abs(indirectFlatBonus) > 0.001 && finalValue > 0.001) {
                         double indirectPercent = indirectFlatBonus / finalValue;
 
                         tooltipLines.add(Text.empty());
                         iconStacks.add(ItemStack.EMPTY);
+                        if (indirectFlatBonus > 0) {
+                            tooltipLines.add(Text.literal(String.format("➤ Indirect bonus: +%.2f", indirectFlatBonus)).formatted(Formatting.DARK_GREEN));
+                            iconStacks.add(ItemStack.EMPTY);
+                            tooltipLines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %.2f) = %.2f", finalValue, indirectPercent, actualFinal)).formatted(Formatting.GRAY));
+                            iconStacks.add(ItemStack.EMPTY);
+                        } else {
+                            tooltipLines.add(Text.literal(String.format("➤ Indirect decrease: -%.2f", Math.abs(indirectFlatBonus))).formatted(Formatting.RED));
+                            iconStacks.add(ItemStack.EMPTY);
+                            tooltipLines.add(Text.literal(String.format("⟶ %.2f × (1.00 - %.2f) = %.2f", finalValue, Math.abs(indirectPercent), actualFinal)).formatted(Formatting.GRAY));
+                            iconStacks.add(ItemStack.EMPTY);
+                        }
 
-                        tooltipLines.add(Text.literal(String.format("➤ Indirect bonus: +%.2f", indirectFlatBonus)).formatted(Formatting.DARK_GREEN));
-                        iconStacks.add(ItemStack.EMPTY);
-
-                        tooltipLines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %.2f) = %.2f", finalValue, indirectPercent, actualFinal)).formatted(Formatting.GRAY));
-                        iconStacks.add(ItemStack.EMPTY);
                     }
                 }
 
