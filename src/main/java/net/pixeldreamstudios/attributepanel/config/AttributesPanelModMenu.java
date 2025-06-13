@@ -14,28 +14,29 @@ public class AttributesPanelModMenu implements ModMenuApi {
         return (Screen parent) -> {
             ConfigBuilder builder = ConfigBuilder.create()
                     .setParentScreen(parent)
-                    .setTitle(Text.literal("Kev's Library Config"));
+                    .setTitle(Text.translatable("config.attributepanel.title"));
 
             ConfigEntryBuilder entryBuilder = builder.entryBuilder();
-            ConfigCategory general = builder.getOrCreateCategory(Text.of("General"));
+            ConfigCategory general = builder.getOrCreateCategory(Text.translatable("config.attributepanel.category.general"));
 
             general.addEntry(entryBuilder
-                    .startIntField(Text.literal("Book icon X Offset"), AttributesPanelConfig.INSTANCE.xOffset)
+                    .startIntField(Text.translatable("config.attributepanel.x_offset"), AttributesPanelConfig.INSTANCE.xOffset)
                     .setDefaultValue(-61)
-                    .setTooltip(Text.of("Horizontal position of the attribute panel icon"))
+                    .setTooltip(Text.translatable("config.attributepanel.x_offset.tooltip"))
                     .setSaveConsumer(value -> AttributesPanelConfig.INSTANCE.xOffset = value)
                     .build());
 
             general.addEntry(entryBuilder
-                    .startIntField(Text.literal("Book icon Y Offset"), AttributesPanelConfig.INSTANCE.yOffset)
+                    .startIntField(Text.translatable("config.attributepanel.y_offset"), AttributesPanelConfig.INSTANCE.yOffset)
                     .setDefaultValue(66)
-                    .setTooltip(Text.of("Vertical position of the attribute panel icon"))
+                    .setTooltip(Text.translatable("config.attributepanel.y_offset.tooltip"))
                     .setSaveConsumer(value -> AttributesPanelConfig.INSTANCE.yOffset = value)
                     .build());
+
             general.addEntry(entryBuilder
-                    .startBooleanToggle(Text.literal("Use Book Background"), AttributesPanelConfig.INSTANCE.useBookBackground)
+                    .startBooleanToggle(Text.translatable("config.attributepanel.book_background"), AttributesPanelConfig.INSTANCE.useBookBackground)
                     .setDefaultValue(true)
-                    .setTooltip(Text.of("If enabled, shows stats inside a book UI. Otherwise uses vanilla-styled panels."))
+                    .setTooltip(Text.translatable("config.attributepanel.book_background.tooltip"))
                     .setSaveConsumer(value -> AttributesPanelConfig.INSTANCE.useBookBackground = value)
                     .build());
 
@@ -47,4 +48,5 @@ public class AttributesPanelModMenu implements ModMenuApi {
             return builder.build();
         };
     }
+
 }

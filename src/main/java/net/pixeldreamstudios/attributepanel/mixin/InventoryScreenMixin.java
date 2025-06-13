@@ -84,7 +84,7 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
             context.setShaderColor(1f, 1f, 1f, 1f);
 
             if (hovered) {
-                context.drawTooltip(this.textRenderer, Text.of("Attributes Panel"), mouseX, mouseY);
+                context.drawTooltip(this.textRenderer, Text.translatable("attributepanel.tooltip.button"), mouseX, mouseY);
             }
         }
     }

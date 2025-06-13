@@ -223,7 +223,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
 
         currentPage = Math.min(currentPage, Math.max(totalPages - 1, 0));
         if (showOnlyChanged && cachedStats.isEmpty()) {
-            String noStatsText = "No changed attributes";
+            String noStatsText = I18n.translate("attributepanel.message.no_changed_attributes");
             int textWidth = tr.getWidth(noStatsText);
             context.drawText(tr, noStatsText, x + (width - textWidth) / 2, y + 8, Formatting.GRAY.getColorValue(), false);
             drawVanillaButtons(context, tr, mouseX, mouseY, y + height - 12);
@@ -300,7 +300,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         int totalPages = (int) Math.ceil(cachedStats.size() / (float) visibleRows);
         currentPage = Math.min(currentPage, Math.max(totalPages - 1, 0));
         if (showOnlyChanged && cachedStats.isEmpty()) {
-            String noStatsText = "No changed attributes";
+            String noStatsText = I18n.translate("attributepanel.message.no_changed_attributes");
             int textWidth = tr.getWidth(noStatsText);
             drawBookButtons(context, tr, mouseX, mouseY, y + height - 20);
             context.drawText(tr, noStatsText, x + (width - textWidth) / 2 + 5, y + 20, Formatting.DARK_GRAY.getColorValue(), false);return;
@@ -404,7 +404,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         List<Text> lines = new ArrayList<>();
         List<ItemStack> icons = new ArrayList<>();
 
-        lines.add(Text.literal("Bonuses:").formatted(Formatting.GOLD));
+        lines.add(Text.translatable("attributepanel.message.bonuses").formatted(Formatting.GOLD));
         icons.add(ItemStack.EMPTY);
 
         boolean addedAny = false;
@@ -496,11 +496,11 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         List<Text> tooltipLines = new ArrayList<>();
         List<ItemStack> iconStacks = new ArrayList<>();
 
-        tooltipLines.add(Text.literal("Base: " + String.format("%.2f", stat.base())));
+        tooltipLines.add(Text.translatable("attributepanel.tooltip.base", String.format("%.2f", stat.base())));
         iconStacks.add(ItemStack.EMPTY);
 
         if (instance != null) {
-            tooltipLines.add(Text.literal("Final: " + String.format("%.2f", instance.getValue())));
+            tooltipLines.add(Text.translatable("attributepanel.tooltip.final", String.format("%.2f", instance.getValue())));
             iconStacks.add(ItemStack.EMPTY);
         }
 
@@ -516,7 +516,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         if (instance != null && !instance.getModifiers().isEmpty()) {
             tooltipLines.add(Text.empty());
             iconStacks.add(ItemStack.EMPTY);
-            tooltipLines.add(Text.literal("Modifiers:").formatted(Formatting.YELLOW));
+            tooltipLines.add(Text.translatable("attributepanel.message.modifiers").formatted(Formatting.YELLOW));
             iconStacks.add(ItemStack.EMPTY);
 
             for (EntityAttributeModifier mod : instance.getModifiers()) {
@@ -730,7 +730,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
             }
 
             if (hasPuffish) {
-                tooltipLines.add(Text.literal("Skill Tree Bonus:").formatted(Formatting.AQUA));
+                tooltipLines.add(Text.translatable("attributepanel.tooltip.skill_tree_bonus").formatted(Formatting.AQUA));
                 iconStacks.add(ItemStack.EMPTY);
 
                 if (puffFlat != 0.0) {
@@ -780,7 +780,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 double afterBaseMult = (multBase != 0.0) ? afterTiered * (1.0 + multBase) : afterTiered;
                 double finalValue = (nonTieredMultTotal != 0.0) ? afterBaseMult * (1.0 + nonTieredMultTotal) : afterBaseMult;
 
-                tooltipLines.add(Text.literal("Calculated:").formatted(Formatting.DARK_GRAY));
+                tooltipLines.add(Text.translatable("attributepanel.tooltip.calculated").formatted(Formatting.DARK_GRAY));
                 iconStacks.add(ItemStack.EMPTY);
 
                 if (flatTotal != 0.0) {
@@ -836,12 +836,12 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                         tooltipLines.add(Text.empty());
                         iconStacks.add(ItemStack.EMPTY);
                         if (indirectFlatBonus > 0) {
-                            tooltipLines.add(Text.literal(String.format("➤ Indirect bonus: +%.2f", indirectFlatBonus)).formatted(Formatting.DARK_GREEN));
+                            tooltipLines.add(Text.translatable("attributepanel.tooltip.indirect_bonus", String.format("%.2f", indirectFlatBonus)).formatted(Formatting.DARK_GREEN));
                             iconStacks.add(ItemStack.EMPTY);
                             tooltipLines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %.2f) = %.2f", finalValue, indirectPercent, actualFinal)).formatted(Formatting.GRAY));
                             iconStacks.add(ItemStack.EMPTY);
                         } else {
-                            tooltipLines.add(Text.literal(String.format("➤ Indirect decrease: -%.2f", Math.abs(indirectFlatBonus))).formatted(Formatting.RED));
+                            tooltipLines.add(Text.translatable("attributepanel.tooltip.indirect_decrease", String.format("%.2f", Math.abs(indirectFlatBonus))).formatted(Formatting.RED));
                             iconStacks.add(ItemStack.EMPTY);
                             tooltipLines.add(Text.literal(String.format("⟶ %.2f × (1.00 - %.2f) = %.2f", finalValue, Math.abs(indirectPercent), actualFinal)).formatted(Formatting.GRAY));
                             iconStacks.add(ItemStack.EMPTY);
@@ -851,7 +851,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 }
 
             } else {
-                tooltipLines.add(Text.literal("Hold \u21E7 Shift to show calculation").formatted(Formatting.GRAY));
+                tooltipLines.add(Text.translatable("attributepanel.tooltip.hold_shift").formatted(Formatting.GRAY));
                 iconStacks.add(ItemStack.EMPTY);
             }
         }

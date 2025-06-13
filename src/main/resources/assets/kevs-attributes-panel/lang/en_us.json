@@ -1,0 +1,25 @@
+{
+  "config.attributepanel.title": "Kev's Library Config",
+  "config.attributepanel.category.general": "General",
+
+  "config.attributepanel.x_offset": "Book icon X Offset",
+  "config.attributepanel.x_offset.tooltip": "Horizontal position of the attribute panel icon",
+
+  "config.attributepanel.y_offset": "Book icon Y Offset",
+  "config.attributepanel.y_offset.tooltip": "Vertical position of the attribute panel icon",
+
+  "config.attributepanel.book_background": "Use Book Background",
+  "config.attributepanel.book_background.tooltip": "If enabled, shows stats inside a book UI. Otherwise uses vanilla-styled panels.",
+
+  "attributepanel.message.no_changed_attributes": "No changed attributes",
+  "attributepanel.message.bonuses": "Bonuses:",
+  "attributepanel.message.modifiers": "Modifiers:",
+  "attributepanel.tooltip.base": "Base: %s",
+  "attributepanel.tooltip.final": "Final: %s",
+  "attributepanel.tooltip.hold_shift": "Hold ⇧ Shift to show calculation",
+  "attributepanel.tooltip.skill_tree_bonus": "Skill Tree Bonus:",
+  "attributepanel.tooltip.indirect_bonus": "➤ Indirect bonus: +%s",
+  "attributepanel.tooltip.indirect_decrease": "➤ Indirect decrease: -%s",
+  "attributepanel.tooltip.calculated": "Calculated:",
+  "attributepanel.tooltip.button": "Attributes Panel"
+}
