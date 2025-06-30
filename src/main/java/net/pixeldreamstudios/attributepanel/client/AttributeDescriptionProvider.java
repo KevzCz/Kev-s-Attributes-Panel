@@ -1,5 +1,7 @@
 package net.pixeldreamstudios.attributepanel.client;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.item.ItemStack;
@@ -9,7 +11,7 @@ import net.minecraft.util.Formatting;
 
 import java.util.ArrayList;
 import java.util.List;
-
+@Environment(EnvType.CLIENT)
 public class AttributeDescriptionProvider {
     private static final String DESCRIPTION_PREFIX = "description.";
 

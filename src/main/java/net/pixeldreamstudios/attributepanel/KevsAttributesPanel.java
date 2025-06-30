@@ -1,7 +1,9 @@
 package net.pixeldreamstudios.attributepanel;
 
+import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.loader.api.FabricLoader;
 import net.pixeldreamstudios.attributepanel.command.AttributeSnapshotCommand;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
 import net.pixeldreamstudios.attributepanel.network.ClientNetwork;
@@ -16,7 +18,9 @@ public class KevsAttributesPanel implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		AttributesPanelConfig.load();
-		ClientNetwork.register();
+		if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
+			ClientNetwork.register();
+		}
 		ServerNetwork.register();
 		AttributeSnapshotCommand.register();
 	}

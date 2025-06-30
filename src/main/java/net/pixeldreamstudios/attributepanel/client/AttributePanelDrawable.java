@@ -1,5 +1,7 @@
 package net.pixeldreamstudios.attributepanel.client;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -37,7 +39,7 @@ import org.spongepowered.asm.mixin.Unique;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
+@Environment(EnvType.CLIENT)
 public class AttributePanelDrawable implements Drawable, Element, Selectable {
     private static final Identifier BOOK_TEXTURE = Identifier.of("minecraft", "textures/gui/book.png");
     private static final Identifier NAME_BG = Identifier.of("minecraft", "textures/block/light_gray_concrete.png");

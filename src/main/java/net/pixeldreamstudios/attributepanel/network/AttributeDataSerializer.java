@@ -26,7 +26,6 @@ public class AttributeDataSerializer {
             attrNbt.putDouble("Base", instance.getBaseValue());
             attrNbt.putDouble("Final", instance.getValue());
 
-            // Group by operation
             NbtList flat = new NbtList();
             NbtList baseMult = new NbtList();
             NbtList totalMult = new NbtList();
@@ -43,7 +42,7 @@ public class AttributeDataSerializer {
                     case ADD_MULTIPLIED_TOTAL -> totalMult.add(modTag);
                 }
             }
-// Add status effect modifiers manually
+
             if (player instanceof LivingEntity living) {
                 for (var entry : living.getStatusEffects()) {
                     var effect = entry.getEffectType().value();
@@ -54,7 +53,7 @@ public class AttributeDataSerializer {
 
                         NbtCompound modTag = new NbtCompound();
                         modTag.putString("Id", "effect:" + effect.getTranslationKey());
-                        modTag.putString("Source", "Vanilla"); // or effect.getRegistryEntry().registryKey().getValue().toString()
+                        modTag.putString("Source", "Vanilla");
                         modTag.putDouble("Value", modifier.value());
 
                         switch (modifier.operation()) {

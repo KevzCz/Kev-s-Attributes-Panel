@@ -2,7 +2,7 @@
 	"required": true,
 	"package": "net.pixeldreamstudios.attributepanel.mixin",
 	"compatibilityLevel": "JAVA_21",
-	"mixins": [
+	"client": [
 		"InventoryScreenMixin"
 	],
 
