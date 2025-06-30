@@ -2,7 +2,10 @@ package net.pixeldreamstudios.attributepanel;
 
 import net.fabricmc.api.ModInitializer;
 
+import net.pixeldreamstudios.attributepanel.command.AttributeSnapshotCommand;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
+import net.pixeldreamstudios.attributepanel.network.ClientNetwork;
+import net.pixeldreamstudios.attributepanel.network.ServerNetwork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +16,8 @@ public class KevsAttributesPanel implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		AttributesPanelConfig.load();
-		LOGGER.info("Initialize Kev's Attributes Panel");
+		ClientNetwork.register();
+		ServerNetwork.register();
+		AttributeSnapshotCommand.register();
 	}
 }
