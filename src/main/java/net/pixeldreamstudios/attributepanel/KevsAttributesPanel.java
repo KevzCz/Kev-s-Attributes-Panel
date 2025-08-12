@@ -18,10 +18,7 @@ public class KevsAttributesPanel implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		AttributesPanelConfig.load();
-		if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
-			ClientNetwork.register();
-		}
 		ServerNetwork.register();
-		AttributeSnapshotCommand.register();
+
 	}
 }
