@@ -1,5 +1,7 @@
 package net.pixeldreamstudios.attributepanel.client;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.ItemStack;
@@ -7,7 +9,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.sound.SoundEvents;
-
+@Environment(EnvType.CLIENT)
 class VanillaAttributePanelDrawable {
     private final AttributePanelDrawable root;
 

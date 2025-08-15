@@ -1,5 +1,7 @@
 package net.pixeldreamstudios.attributepanel.client;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -37,7 +39,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static net.pixeldreamstudios.attributepanel.client.AttributePanelDrawable.formatModifierId;
-
+@Environment(EnvType.CLIENT)
 public class CompactAttributePanelDrawable implements Drawable, Element, Selectable {
     private final AttributePanelDrawable root;
 

@@ -1,5 +1,7 @@
 package net.pixeldreamstudios.attributepanel.client;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.ItemStack;
@@ -16,7 +18,7 @@ import net.minecraft.sound.SoundEvents;
 
 import java.util.*;
 
-
+@Environment(EnvType.CLIENT)
 class BookAttributePanelDrawable {
     private final AttributePanelDrawable root;
 
