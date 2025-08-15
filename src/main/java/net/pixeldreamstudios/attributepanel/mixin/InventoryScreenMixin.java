@@ -5,7 +5,6 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -18,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.joml.Vector3f;
+
 @Environment(EnvType.CLIENT)
 @Mixin(InventoryScreen.class)
 public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHandler> {
@@ -30,7 +29,6 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
     @Unique
     private static final Identifier ATTRIBUTE_BOOK = Identifier.of("kevs-attributes-panel", "textures/gui/attribute_book.png");
 
-
     public InventoryScreenMixin(PlayerScreenHandler handler, net.minecraft.entity.player.PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
     }
@@ -39,9 +37,11 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
     private void attributespanel$onInit(CallbackInfo ci) {
         attributespanel$attributePanel = new AttributePanelDrawable(this.x - 130, this.y, 120);
         attributespanel$attributePanel.setHeightFromInventory(this.backgroundHeight);
+
         this.addDrawableChild(attributespanel$attributePanel);
         this.addSelectableChild(attributespanel$attributePanel);
     }
+
 
     @Inject(method = "render", at = @At("TAIL"))
     private void attributespanel$onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
@@ -66,7 +66,6 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
 
             if (hovered) {
                 float time = attributespanel$iconTick / 8f;
-
                 float pulse = (float) Math.sin(time);
                 float scale = 1.0f + 0.1f * pulse;
                 float rotation = 1.5f * pulse;
@@ -82,7 +81,6 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
                 context.drawTexture(ATTRIBUTE_BOOK, buttonX, buttonY, 0, 0, iconSize, iconSize, 9, 9);
             }
 
-
             context.setShaderColor(1f, 1f, 1f, 1f);
 
             if (hovered) {
@@ -90,6 +88,7 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
             }
         }
     }
+
     @Inject(method = "render", at = @At("RETURN"))
     private void attributespanel$renderTooltipAfterEverything(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (attributespanel$attributePanel != null && attributespanel$attributePanel.isExpanded()) {
@@ -107,15 +106,22 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
             if (mouseX >= buttonX && mouseX <= buttonX + iconSize &&
                     mouseY >= buttonY && mouseY <= buttonY + iconSize) {
                 attributespanel$attributePanel.toggle();
+                // optional: focus panel here if you want
+                // this.setFocused(attributespanel$attributePanel);
                 cir.setReturnValue(true);
                 cir.cancel();
                 return;
             }
 
             if (attributespanel$attributePanel.mouseClicked(mouseX, mouseY, button)) {
+                // 👇 IMPORTANT: make dragging/drag events work
+                this.setFocused(attributespanel$attributePanel);
+                if (button == 0) this.setDragging(true);
+
                 cir.setReturnValue(true);
                 cir.cancel();
             }
         }
     }
+
 }

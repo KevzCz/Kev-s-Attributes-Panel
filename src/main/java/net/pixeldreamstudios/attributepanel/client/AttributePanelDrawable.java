@@ -9,9 +9,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
@@ -20,7 +18,6 @@ import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -28,46 +25,44 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.pixeldreamstudios.attributepanel.compat.TrinketCompat;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
-import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
-import org.spongepowered.asm.mixin.Unique;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
 @Environment(EnvType.CLIENT)
 public class AttributePanelDrawable implements Drawable, Element, Selectable {
-    private static final Identifier BOOK_TEXTURE = Identifier.of("minecraft", "textures/gui/book.png");
-    private static final Identifier NAME_BG = Identifier.of("minecraft", "textures/block/light_gray_concrete.png");
-    private static final Identifier VALUE_BG = Identifier.of("minecraft", "textures/block/gray_concrete.png");
 
-    private final MinecraftClient client = MinecraftClient.getInstance();
-    private final int x, y, width;
-    private int height;
-    @Unique
-    private List<Text> queuedTooltip = null;
+    protected final MinecraftClient client = MinecraftClient.getInstance();
+    protected final int x, y, width;
+    protected int height;
 
-    private static final Identifier INFO_ICON = Identifier.of("kevs-attributes-panel", "textures/gui/attribute_book.png");
-    private static final int INFO_ICON_SIZE = 16;
-    @Unique
-    private int tooltipX, tooltipY;
+    protected boolean expanded = false;
+    protected int currentPage = 0;
+    protected boolean showOnlyChanged = true;
+    public static final int MAX_ROWS = 6;
 
-    private boolean expanded = false;
-    private final List<StatEntry> cachedStats = new ArrayList<>();
-    private int currentPage = 0;
+    protected final List<StatEntry> cachedStats = new ArrayList<>();
 
-    private static final int MAX_ROWS = 6;
-    private boolean showOnlyChanged = true;
-    private List<ItemStack> queuedTooltipIcons = new ArrayList<>();
-    private static final String DESCRIPTION_PREFIX = "description.";
+    protected List<Text> queuedTooltip = null;
+    protected List<ItemStack> queuedTooltipIcons = null;
+    protected int tooltipX, tooltipY;
+
+    private final BookAttributePanelDrawable bookGui;
+    private final VanillaAttributePanelDrawable vanillaGui;
+    private final CompactAttributePanelDrawable compactGui;
+
     public AttributePanelDrawable(int x, int y, int width) {
         this.x = x;
         this.y = y;
         this.width = width;
+        this.bookGui = new BookAttributePanelDrawable(this);
+        this.vanillaGui = new VanillaAttributePanelDrawable(this);
+        this.compactGui = new CompactAttributePanelDrawable(this);
     }
 
     public void setHeightFromInventory(int inventoryHeight) {
@@ -79,73 +74,6 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         currentPage = 0;
         if (expanded) cacheStats();
     }
-    public void renderTooltip(DrawContext context) {
-        if (queuedTooltip == null || queuedTooltip.isEmpty()) return;
-
-        TextRenderer tr = client.textRenderer;
-        int zOffset = 400;
-        context.getMatrices().push();
-        context.getMatrices().translate(0, 0, zOffset);
-
-        int maxWidth = 0;
-        for (Text line : queuedTooltip) {
-            maxWidth = Math.max(maxWidth, tr.getWidth(line.getString()));
-        }
-
-        int tooltipWidth = maxWidth + 28;
-        int tooltipHeight = queuedTooltip.size() * (tr.fontHeight + 4) + 12;
-
-        int screenWidth = client.getWindow().getScaledWidth();
-        int screenHeight = client.getWindow().getScaledHeight();
-
-        int tooltipX = this.tooltipX + 12;
-        int tooltipY = this.tooltipY + 12;
-
-        if (tooltipX + tooltipWidth > screenWidth) {
-            tooltipX = screenWidth - tooltipWidth - 8;
-        }
-        if (tooltipY + tooltipHeight > screenHeight) {
-            tooltipY = screenHeight - tooltipHeight - 8;
-        }
-
-        tooltipX = Math.max(tooltipX, 4);
-        tooltipY = Math.max(tooltipY, 4);
-
-
-        int backgroundColor = 0xF0131313;
-        int borderColorStart = 0xFF5A5A5A;
-        int borderColorEnd = 0xFFAAAAAA;
-
-        context.fillGradient(tooltipX - 4, tooltipY - 4, tooltipX + tooltipWidth + 4, tooltipY + tooltipHeight,
-                backgroundColor, backgroundColor);
-        context.drawBorder(tooltipX - 4, tooltipY - 4, tooltipWidth + 8, tooltipHeight + 1, borderColorStart);
-
-        for (int i = 0; i < queuedTooltip.size(); i++) {
-            int lineY = tooltipY + i * (tr.fontHeight + 4);
-
-            ItemStack icon = (queuedTooltipIcons != null && i < queuedTooltipIcons.size()) ? queuedTooltipIcons.get(i) : ItemStack.EMPTY;
-
-            int iconOffset = 0;
-            if (!icon.isEmpty()) {
-                context.getMatrices().push();
-                context.getMatrices().translate(tooltipX, lineY, 0);
-                context.getMatrices().scale(0.85f, 0.85f, 1f);
-                context.drawItem(icon, 0, 0);
-                context.getMatrices().pop();
-                iconOffset = 18;
-            }
-
-            int textX = tooltipX + iconOffset;
-            context.drawText(tr, queuedTooltip.get(i), textX, lineY + 2, 0xFFFFFF, false);
-        }
-
-        context.getMatrices().pop();
-
-        queuedTooltip = null;
-        if (queuedTooltipIcons != null) queuedTooltipIcons.clear();
-    }
-
-
 
     public void tick() {
         if (expanded) cacheStats();
@@ -155,7 +83,124 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         return expanded;
     }
 
-    private void cacheStats() {
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        if (!expanded) return;
+        switch (AttributesPanelConfig.INSTANCE.guiStyle) {
+            case BOOK -> bookGui.render(context, mouseX, mouseY, delta);
+            case VANILLA -> vanillaGui.render(context, mouseX, mouseY, delta);
+            case COMPACT -> compactGui.render(context, mouseX, mouseY, delta);
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!expanded) return false;
+        return switch (AttributesPanelConfig.INSTANCE.guiStyle) {
+            case BOOK -> bookGui.mouseClicked(mouseX, mouseY, button);
+            case VANILLA -> vanillaGui.mouseClicked(mouseX, mouseY, button);
+            case COMPACT -> compactGui.mouseClicked(mouseX, mouseY, button);
+        };
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (!expanded) return false;
+        boolean handled = switch (AttributesPanelConfig.INSTANCE.guiStyle) {
+            case BOOK -> false;
+            case VANILLA -> false;
+            case COMPACT -> compactGui.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+        };
+        return handled;
+    }
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (!expanded) return false;
+        return switch (AttributesPanelConfig.INSTANCE.guiStyle) {
+            case BOOK    -> false;
+            case VANILLA -> false;
+            case COMPACT -> compactGui.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        };
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (!expanded) return false;
+        return switch (AttributesPanelConfig.INSTANCE.guiStyle) {
+            case BOOK    -> false;
+            case VANILLA -> false;
+            case COMPACT -> compactGui.mouseReleased(mouseX, mouseY, button);
+        };
+    }
+
+
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        if (!expanded) return false;
+        int bgX = left() - 16;
+        int bgY = top();
+        int bgWidth = panelWidth() + 16;
+        int bgHeight = panelHeight();
+        return mouseX >= bgX && mouseX <= bgX + bgWidth && mouseY >= bgY && mouseY <= bgY + bgHeight;
+    }
+
+    public void renderTooltip(DrawContext context) {
+        if (queuedTooltip == null || queuedTooltip.isEmpty()) return;
+        TextRenderer tr = client.textRenderer;
+        int zOffset = 400;
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, zOffset);
+
+        List<Text> lines = queuedTooltip;
+        List<ItemStack> icons = queuedTooltipIcons;
+
+        int maxWidth = 0;
+        for (Text line : lines) {
+            maxWidth = Math.max(maxWidth, tr.getWidth(line));
+        }
+
+        int tooltipWidth = maxWidth + 28;
+        int tooltipHeight = lines.size() * (tr.fontHeight + 4) + 12;
+
+        int screenWidth = client.getWindow().getScaledWidth();
+        int screenHeight = client.getWindow().getScaledHeight();
+
+        int drawX = this.tooltipX + 12;
+        int drawY = this.tooltipY + 12;
+
+        if (drawX + tooltipWidth > screenWidth) drawX = screenWidth - tooltipWidth - 8;
+        if (drawY + tooltipHeight > screenHeight) drawY = screenHeight - tooltipHeight - 8;
+        drawX = Math.max(drawX, 4);
+        drawY = Math.max(drawY, 4);
+
+        int backgroundColor = 0xF0131313;
+        int borderColor = 0xFF5A5A5A;
+
+        context.fillGradient(drawX - 4, drawY - 4, drawX + tooltipWidth + 4, drawY + tooltipHeight, backgroundColor, backgroundColor);
+        context.drawBorder(drawX - 4, drawY - 4, tooltipWidth + 8, tooltipHeight + 1, borderColor);
+
+        for (int i = 0; i < lines.size(); i++) {
+            int lineY = drawY + i * (tr.fontHeight + 4);
+            ItemStack icon = (icons != null && i < icons.size()) ? icons.get(i) : ItemStack.EMPTY;
+            int iconOffset = 0;
+            if (!icon.isEmpty()) {
+                context.getMatrices().push();
+                context.getMatrices().translate(drawX, lineY, 0);
+                context.getMatrices().scale(0.85f, 0.85f, 1f);
+                context.drawItem(icon, 0, 0);
+                context.getMatrices().pop();
+                iconOffset = 18;
+            }
+            int textX = drawX + iconOffset;
+            context.drawText(tr, lines.get(i), textX, lineY + 2, 0xFFFFFF, false);
+        }
+
+        context.getMatrices().pop();
+        queuedTooltip = null;
+        queuedTooltipIcons = null;
+    }
+
+    protected void cacheStats() {
         cachedStats.clear();
         PlayerEntity player = client.player;
         if (player == null) return;
@@ -165,300 +210,91 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
             EntityAttributeInstance instance = player.getAttributeInstance(entry);
             if (instance == null) continue;
 
-            boolean isPercent = attr.getTranslationKey().contains("resistance")
-                    || attr.getTranslationKey().contains("movement_speed")
-                    || attr.getTranslationKey().contains("fire_tornado_chance")
-                    || attr.getTranslationKey().contains("fire_tornado_overload_chance")
-                    || attr.getTranslationKey().contains("chain_lightning_chance")
-                    || attr.getTranslationKey().contains("chain_lightning_overload_chance")
-                    || attr.getTranslationKey().contains("frost_nova_chance")
-                    || attr.getTranslationKey().contains("frost_nova_overload_chance")
-                    || attr.getTranslationKey().contains("arcane_rupture_chance")
-                    || attr.getTranslationKey().contains("arcane_rupture_damage")
-                    || attr.getTranslationKey().contains("arcane_rupture_overload_chance")
-                    || attr.getTranslationKey().contains("ratio")
-                    || attr.getTranslationKey().contains("crit_chance")
-                    || attr.getTranslationKey().contains("crit_damage")
-                    || attr.getTranslationKey().contains("soul_link_damage")
-                    || attr.getTranslationKey().contains("soul_link_chance")
-                    || attr.getTranslationKey().contains("multistrike_chance")
-                    || attr.getTranslationKey().contains("multistrike_damage")
-                    || attr.getTranslationKey().contains("damage_multiplier")
-                    || attr.getTranslationKey().contains("trident_damage_multiplier");
+            Identifier attrId = Registries.ATTRIBUTE.getId(attr);
+            String idStr = attrId == null ? "" : attrId.toString();
+            String tkey  = attr.getTranslationKey().toLowerCase(java.util.Locale.ROOT);
 
-            double base = instance.getBaseValue();
-            double value = instance.getValue();
+            double rawBase  = instance.getBaseValue();
+            double rawValue = instance.getValue();
 
-            if (showOnlyChanged) {
-                if (Double.isNaN(value) || Math.abs(base - value) < 0.001) continue;
+            enum Mode { NONE, FRACTION_0_TO_1, BASE_100 }
+            Mode mode = Mode.NONE;
+
+            if (AttributesPanelConfig.INSTANCE.percentAttributesBase100.contains(idStr)) {
+                mode = Mode.BASE_100;
+            } else if (AttributesPanelConfig.INSTANCE.percentAttributes.contains(idStr)) {
+                mode = Mode.FRACTION_0_TO_1;
+            } else {
+                if (containsAny(tkey, AttributesPanelConfig.INSTANCE.percentBase100Keywords)) {
+                    mode = Mode.BASE_100;
+                } else if (containsAny(tkey, AttributesPanelConfig.INSTANCE.percentKeywords)) {
+                    mode = Mode.FRACTION_0_TO_1;
+                }
+            }
+
+            double baseForDisplay  = rawBase;
+            double valueForDisplay = rawValue;
+            boolean isPercent = mode != Mode.NONE;
+
+            if (mode == Mode.BASE_100) {
+                baseForDisplay  = (rawBase  - 100.0) / 100.0;
+                valueForDisplay = (rawValue - 100.0) / 100.0;
+            }
+
+            if (showOnlyChanged && AttributesPanelConfig.INSTANCE.guiStyle != AttributesPanelConfig.GuiStyle.COMPACT) {
+                if (Double.isNaN(valueForDisplay) || Math.abs(baseForDisplay - valueForDisplay) < 0.001) continue;
             }
 
             cachedStats.add(new StatEntry(
                     Text.translatable(attr.getTranslationKey()),
-                    base,
-                    value,
+                    baseForDisplay,
+                    valueForDisplay,
                     isPercent,
                     entry
             ));
-            cachedStats.sort((a, b) -> a.name().getString().compareToIgnoreCase(b.name().getString()));
-
         }
+        cachedStats.sort((a, b) -> a.name().getString().compareToIgnoreCase(b.name().getString()));
     }
 
-    @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        if (!expanded) return;
-        if (AttributesPanelConfig.INSTANCE.useBookBackground) {
-            renderBookLayout(context, mouseX, mouseY);
-        } else {
-            renderVanillaLayout(context, mouseX, mouseY);
+    private static boolean containsAny(String haystack, List<String> needles) {
+        if (needles == null || needles.isEmpty()) return false;
+        for (String n : needles) {
+            if (n != null && !n.isBlank() && haystack.contains(n.toLowerCase(java.util.Locale.ROOT))) {
+                return true;
+            }
         }
+        return false;
     }
 
-    private void renderVanillaLayout(DrawContext context, int mouseX, int mouseY) {
-        TextRenderer tr = client.textRenderer;
-        int rowHeight = 24;
-        int padding = 2;
-
-        int visibleRows = MAX_ROWS;
-        int totalPages = (int) Math.ceil(cachedStats.size() / (float) visibleRows);
-
-        currentPage = Math.min(currentPage, Math.max(totalPages - 1, 0));
-        if (showOnlyChanged && cachedStats.isEmpty()) {
-            String noStatsText = I18n.translate("attributepanel.message.no_changed_attributes");
-            int textWidth = tr.getWidth(noStatsText);
-            context.drawText(tr, noStatsText, x + (width - textWidth) / 2, y + 8, Formatting.GRAY.getColorValue(), false);
-            drawVanillaButtons(context, tr, mouseX, mouseY, y + height - 12);
-            return;
-        }
-        int startIndex = currentPage * visibleRows;
-        int endIndex = Math.min(startIndex + visibleRows, cachedStats.size());
-        int rowY = y + padding;
-
-        int hoverIndex = -1;
-
-        for (int i = startIndex; i < endIndex; i++) {
-            StatEntry stat = cachedStats.get(i);
-            int rowIndex = i - startIndex;
-            int yOffset = rowY + rowIndex * rowHeight;
-
-            String statName = stat.name().getString();
-            int maxNameWidth = width / 2 - 8;
-
-            String topLine, bottomLine = null;
-            if (tr.getWidth(statName) <= maxNameWidth) {
-                topLine = statName;
-            } else {
-                topLine = tr.trimToWidth(statName, maxNameWidth);
-                String remainder = statName.substring(topLine.length()).trim();
-
-                if (!remainder.isEmpty()) {
-                    bottomLine = tr.trimToWidth(remainder, maxNameWidth);
-                    if (tr.getWidth(remainder) > maxNameWidth) {
-                        while (tr.getWidth(bottomLine + "...") > maxNameWidth && bottomLine.length() > 0) {
-                            bottomLine = bottomLine.substring(0, bottomLine.length() - 1);
-                        }
-                        bottomLine += "...";
-                    }
-                }
-            }
-
-            context.drawTexture(NAME_BG, x, yOffset, 0, 0, width / 2, rowHeight, 16, 16);
-            context.drawTexture(VALUE_BG, x + width / 2, yOffset, 0, 0, width / 2, rowHeight, 16, 16);
-
-            int nameY = yOffset + (rowHeight - 8) / 2;
-            if (bottomLine == null) {
-                context.drawText(tr, topLine, x + 4, nameY, 0xFFFFFF, false);
-            } else {
-                context.drawText(tr, topLine, x + 4, yOffset + 4, 0xFFFFFF, false);
-                context.drawText(tr, bottomLine, x + 4, yOffset + 14, 0xCCCCCC, false);
-            }
-
-            String valueStr = stat.percent() ? String.format("%d%%", (int) (stat.current() * 100)) : String.format("%.2f", stat.current());
-            int color = stat.isChanged() ? (stat.current() > stat.base() ? Formatting.GREEN.getColorValue() : Formatting.RED.getColorValue()) : Formatting.GRAY.getColorValue();
-            valueStr += stat.isChanged() ? (stat.current() > stat.base() ? " ↑" : " ↓") : "";
-
-            int valueY = yOffset + (rowHeight - 8) / 2;
-            context.drawText(tr, valueStr, x + width - 4 - tr.getWidth(valueStr), valueY, color, false);
-            context.fill(x, yOffset + rowHeight - 1, x + width, yOffset + rowHeight, 0xFF444444);
-
-            if (mouseX >= x && mouseX <= x + width && mouseY >= yOffset && mouseY <= yOffset + rowHeight) {
-                hoverIndex = i;
-            }
-        }
-
-        drawVanillaTooltipButton(context, tr, hoverIndex, mouseX, mouseY, rowHeight, padding);
-
-    }
-
-    private void renderBookLayout(DrawContext context, int mouseX, int mouseY) {
-        TextRenderer tr = client.textRenderer;
-        int rowHeight = 20;
-        int padding = 20;
-
-        context.drawTexture(BOOK_TEXTURE, x - 25, y, 0, 0, 240, 230, 240, 230);
-
-        int visibleRows = MAX_ROWS;
-        int totalPages = (int) Math.ceil(cachedStats.size() / (float) visibleRows);
-        currentPage = Math.min(currentPage, Math.max(totalPages - 1, 0));
-        if (showOnlyChanged && cachedStats.isEmpty()) {
-            String noStatsText = I18n.translate("attributepanel.message.no_changed_attributes");
-            int textWidth = tr.getWidth(noStatsText);
-            drawBookButtons(context, tr, mouseX, mouseY, y + height - 20);
-            context.drawText(tr, noStatsText, x + (width - textWidth) / 2 + 5, y + 20, Formatting.DARK_GRAY.getColorValue(), false);return;
-        }
-        int startIndex = currentPage * visibleRows;
-        int endIndex = Math.min(startIndex + visibleRows, cachedStats.size());
-        int rowY = y + padding;
-
-        int hoverIndex = -1;
-
-        for (int i = startIndex; i < endIndex; i++) {
-
-            StatEntry stat = cachedStats.get(i);
-            int rowIndex = i - startIndex;
-            int yOffset = rowY + rowIndex * rowHeight;
-
-            String statName = stat.name().getString();
-            int maxNameWidth = width / 2 - 7;
-            context.fill(x + 12, yOffset + rowHeight + 2, x + width - 12, yOffset + rowHeight +1, 0xFFD6C4A3);
-            String topLine, bottomLine = null;
-            if (tr.getWidth(statName) <= maxNameWidth) {
-                topLine = statName;
-            } else {
-                topLine = tr.trimToWidth(statName, maxNameWidth);
-                String remainder = statName.substring(topLine.length()).trim();
-
-                if (!remainder.isEmpty()) {
-                    bottomLine = tr.trimToWidth(remainder, maxNameWidth);
-                    if (tr.getWidth(remainder) > maxNameWidth) {
-                        while (tr.getWidth(bottomLine + "...") > maxNameWidth && bottomLine.length() > 0) {
-                            bottomLine = bottomLine.substring(0, bottomLine.length() - 1);
-                        }
-                        bottomLine += "...";
-                    }
-                }
-            }
-
-            int nameX = x + 15;
-            int valueX = x + width - 12;
-            int nameY = yOffset + (rowHeight - 8) / 2;
-
-            if (bottomLine == null) {
-                context.drawText(tr, topLine, nameX, nameY, 0x3A2F23, false);
-            } else {
-                context.drawText(tr, topLine, nameX, yOffset + 4, 0x3A2F23, false);
-                context.drawText(tr, bottomLine, nameX, yOffset + 12, 0x6D5C48, false);
-            }
-
-            String valueStr = stat.percent() ? String.format("%d%%", (int) (stat.current() * 100)) : String.format("%.2f", stat.current());
-            int color = stat.isChanged() ? (stat.current() > stat.base() ? Formatting.GREEN.getColorValue() : Formatting.RED.getColorValue()) : Formatting.GRAY.getColorValue();
-            valueStr += stat.isChanged() ? (stat.current() > stat.base() ? " ↑" : " ↓") : "";
-
-            context.drawText(tr, valueStr, valueX - tr.getWidth(valueStr), nameY, color, false);
-
-            if (mouseX >= x && mouseX <= x + width && mouseY >= yOffset && mouseY <= yOffset + rowHeight) {
-                hoverIndex = i;
-            }
-        }
-        int infoX = x + width - INFO_ICON_SIZE - 95;
-        int infoY = y + 10;
-
-        int textureWidth = 8;
-        int textureHeight = 8;
-        context.drawTexture(INFO_ICON, infoX, infoY, 0, 0, textureWidth, textureHeight, textureWidth, textureHeight);
 
 
-        if (mouseX >= infoX && mouseX <= infoX + INFO_ICON_SIZE &&
-                mouseY >= infoY && mouseY <= infoY + INFO_ICON_SIZE) {
-            drawGlobalBonusTooltip(mouseX, mouseY);
-        }
-
-        drawBookTooltipButton(context, tr, hoverIndex, mouseX, mouseY, rowHeight, padding);
-    }
-    private void drawGlobalBonusTooltip(int mouseX, int mouseY) {
-        PlayerEntity player = client.player;
-        if (player == null) return;
-
-        Map<String, Double> flatMap = new TreeMap<>();
-        Map<String, Double> baseMultMap = new TreeMap<>();
-        Map<String, Double> totalMultMap = new TreeMap<>();
-
-        for (RegistryEntry<EntityAttribute> entry : Registries.ATTRIBUTE.streamEntries().toList()) {
-            EntityAttribute attr = entry.value();
-            EntityAttributeInstance instance = player.getAttributeInstance(entry);
-            if (instance == null || instance.getModifiers().isEmpty()) continue;
-
-            String attrName = Text.translatable(attr.getTranslationKey()).getString();
-
-            for (EntityAttributeModifier mod : instance.getModifiers()) {
-                double value = mod.value();
-                if (Math.abs(value) < 0.0001) continue;
-
-                switch (mod.operation()) {
-                    case ADD_VALUE -> flatMap.merge(attrName, value, Double::sum);
-                    case ADD_MULTIPLIED_BASE -> baseMultMap.merge(attrName, value, Double::sum);
-                    case ADD_MULTIPLIED_TOTAL -> totalMultMap.merge(attrName, value, Double::sum);
-                }
-            }
-        }
-
-        List<Text> lines = new ArrayList<>();
-        List<ItemStack> icons = new ArrayList<>();
-
-        lines.add(Text.translatable("attributepanel.message.bonuses").formatted(Formatting.GOLD));
-        icons.add(ItemStack.EMPTY);
-
-        boolean addedAny = false;
-
-        for (String attr : flatMap.keySet()) {
-            double value = flatMap.get(attr);
-            lines.add(Text.literal(String.format("- %s: %+,.2f", attr, value)).formatted(Formatting.GREEN));
-            icons.add(ItemStack.EMPTY);
-            addedAny = true;
-        }
-
-        for (String attr : baseMultMap.keySet()) {
-            double value = baseMultMap.get(attr);
-            lines.add(Text.literal(String.format("- %s: %+d%% Base", attr, (int)(value * 100))).formatted(Formatting.GREEN));
-            icons.add(ItemStack.EMPTY);
-            addedAny = true;
-        }
-
-        for (String attr : totalMultMap.keySet()) {
-            double value = totalMultMap.get(attr);
-            lines.add(Text.literal(String.format("- %s: %+d%% Total", attr, (int)(value * 100))).formatted(Formatting.GREEN));
-            icons.add(ItemStack.EMPTY);
-            addedAny = true;
-        }
-
-        if (!addedAny) {
-            lines.add(Text.literal("No active modifiers").formatted(Formatting.GRAY));
-            icons.add(ItemStack.EMPTY);
-        }
-
+    protected void enqueueTooltip(List<Text> lines, List<ItemStack> icons, int mouseX, int mouseY) {
         this.queuedTooltip = lines;
         this.queuedTooltipIcons = icons;
         this.tooltipX = mouseX;
         this.tooltipY = mouseY;
     }
+    @Override
+    public boolean charTyped(char chr, int modifiers) {
+        if (compactGui.wantsKeys()) {
 
-
-    private void drawVanillaTooltipButton(DrawContext context, TextRenderer tr, int hoverIndex, int mouseX, int mouseY, int rowHeight, int padding) {
-        drawTooltipContent(context, tr, hoverIndex, mouseX, mouseY, rowHeight, padding);
-
-        int btnY = y + height - 12;
-        drawVanillaButtons(context, tr, mouseX, mouseY, btnY);
+            if (compactGui.handleCharTyped(chr, modifiers)) return true;
+            return true;
+        }
+        return Element.super.charTyped(chr, modifiers);
     }
 
-    private void drawBookTooltipButton(DrawContext context, TextRenderer tr, int hoverIndex, int mouseX, int mouseY, int rowHeight, int padding) {
-        drawTooltipContent(context, tr, hoverIndex, mouseX, mouseY, rowHeight, padding);
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (compactGui.wantsKeys()) {
+            if (compactGui.handleKeyPressed(keyCode, scanCode, modifiers)) return true;
 
-        int btnY = y + height - 20;
-        drawBookButtons(context, tr, mouseX, mouseY, btnY);
+            return true;
+        }
+        return Element.super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    private void drawTooltipContent(DrawContext context,
+    public void drawTooltipContent(DrawContext context,
                                     TextRenderer tr,
                                     int hoverIndex,
                                     int mouseX,
@@ -530,7 +366,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
 
                     if (tieredParts.length >= 3 && tieredParts[tieredParts.length - 1].contains("_")) {
                         fullPath = tieredParts[tieredParts.length - 1];
-                        rawId = Identifier.of("tiered", fullPath);  // Normalize
+                        rawId = Identifier.of("tiered", fullPath);
                     }
                 }
 
@@ -865,27 +701,18 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
     }
 
 
-
-    private ItemStack createColoredPotionItem(StatusEffect effect) {
+    protected ItemStack createColoredPotionItem(StatusEffect effect) {
         ItemStack stack = new ItemStack(Items.POTION);
-
-
         stack.set(DataComponentTypes.CUSTOM_NAME, Text.translatable(effect.getTranslationKey()));
-
-         NbtCompound nbt = new NbtCompound();
+        NbtCompound nbt = new NbtCompound();
         nbt.putInt("CustomPotionColor", 0xFF0000);
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
-
         return stack;
     }
 
-
-
-    private static String formatModifierId(Identifier id) {
+    protected static String formatModifierId(Identifier id) {
         String path = id.getPath();
-        if (path.contains("/")) {
-            path = path.substring(0, path.indexOf('/'));
-        }
+        if (path.contains("/")) path = path.substring(0, path.indexOf('/'));
         String[] parts = path.split("_");
         StringBuilder sb = new StringBuilder();
         for (String part : parts) {
@@ -895,157 +722,25 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         return sb.toString();
     }
 
-
-    private record ButtonCoords(int prevX, int checkX, int nextX, int prevW, int checkW, int nextW) {}
-
-    private ButtonCoords getBookButtonCoords(TextRenderer tr) {
-        String prevText = "««";
-        String nextText = "»»";
-        String checkLabel = "[ " + (showOnlyChanged ? "✓" : " ") + " ]";
-
-        int spacing = 24;
-
-        int prevW = tr.getWidth(prevText);
-        int checkW = tr.getWidth(checkLabel);
-        int nextW = tr.getWidth(nextText);
-
-        int totalWidth = prevW + spacing + checkW + spacing + nextW;
-        int startX = x + (width - totalWidth) / 2;
-
-        int prevX = startX;
-        int checkX = prevX + prevW + spacing;
-        int nextX = checkX + checkW + spacing;
-
-        return new ButtonCoords(prevX, checkX, nextX, prevW, checkW, nextW);
-    }
-
-    private void drawBookButtons(DrawContext context, TextRenderer tr, int mouseX, int mouseY, int btnY) {
-        String prevText = "««";
-        String nextText = "»»";
-        String checkLabel = "[ " + (showOnlyChanged ? "✓" : " ") + " ]";
-
-        int spacing = 24;
-        int buttonHeight = 10;
-
-        int prevWidth = tr.getWidth(prevText);
-        int checkWidth = tr.getWidth(checkLabel);
-        int nextWidth = tr.getWidth(nextText);
-
-        int totalWidth = prevWidth + spacing + checkWidth + spacing + nextWidth;
-        int startX = x + (width - totalWidth) / 2;
-
-        int prevX = startX;
-        int checkX = prevX + prevWidth + spacing;
-        int nextX = checkX + checkWidth + spacing;
-
-        context.drawText(tr, prevText, prevX, btnY,
-                mouseIn(mouseX, mouseY, prevX, btnY, prevWidth, buttonHeight) ? 0x3A2F23 : 0xAAAAAA, false);
-
-        context.drawText(tr, checkLabel, checkX, btnY,
-                mouseIn(mouseX, mouseY, checkX, btnY, checkWidth, buttonHeight) ? 0x3A2F23 : 0xAAAAAA, false);
-
-        context.drawText(tr, nextText, nextX, btnY,
-                mouseIn(mouseX, mouseY, nextX, btnY, nextWidth, buttonHeight) ? 0x3A2F23 : 0xAAAAAA, false);
-    }
-
-    private void drawVanillaButtons(DrawContext context, TextRenderer tr, int mouseX, int mouseY, int btnY) {
-        String prevText = "« Prev";
-        String nextText = "Next »";
-        String checkLabel = "[ " + (showOnlyChanged ? "✓" : " ") + " ]";
-
-        int spacing = 12;
-        int buttonHeight = 10;
-
-        int prevWidth = tr.getWidth(prevText);
-        int checkWidth = tr.getWidth(checkLabel);
-        int nextWidth = tr.getWidth(nextText);
-
-        int centerX = x + width / 2;
-
-        int prevX = centerX - checkWidth / 2 - spacing - prevWidth;
-        int checkX = centerX - checkWidth / 2;
-        int nextX = centerX + checkWidth / 2 + spacing;
-
-        context.drawText(tr, prevText, prevX, btnY,
-                mouseIn(mouseX, mouseY, prevX, btnY, prevWidth, buttonHeight) ? 0xFFFFFF : 0xAAAAAA, false);
-
-        context.drawText(tr, checkLabel, checkX, btnY,
-                mouseIn(mouseX, mouseY, checkX, btnY, checkWidth, buttonHeight) ? 0xFFFFFF : 0xAAAAAA, false);
-
-        context.drawText(tr, nextText, nextX, btnY,
-                mouseIn(mouseX, mouseY, nextX, btnY, nextWidth, buttonHeight) ? 0xFFFFFF : 0xAAAAAA, false);
-    }
-
-    private boolean mouseIn(int mx, int my, int x, int y, int w, int h) {
+    protected static boolean mouseIn(int mx, int my, int x, int y, int w, int h) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
     }
 
-    @Override public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!expanded) return false;
+    public MinecraftClient mc() { return client; }
+    public int left() { return x; }
+    public int top() { return y; }
+    public int panelWidth() { return width; }
+    public int panelHeight() { return height; }
 
-        int btnY = y + height - (AttributesPanelConfig.INSTANCE.useBookBackground ? 20 : 12);
-        String prevText = "« Prev";
-        String nextText = "Next »";
-        String checkLabel = "[ " + (showOnlyChanged ? "✓" : " ") + " ]";
+    public int getCurrentPage() { return currentPage; }
+    public void setCurrentPage(int p) { currentPage = p; }
+    public boolean getShowOnlyChanged() { return showOnlyChanged; }
+    public void setShowOnlyChanged(boolean v) { showOnlyChanged = v; }
 
-        int prevX = x + 20;
-        int nextW = client.textRenderer.getWidth(nextText);
-        int nextX = x + width - 20 - nextW;
-        int checkX = x + (width / 2) - (client.textRenderer.getWidth(checkLabel) / 2);
-        if (AttributesPanelConfig.INSTANCE.useBookBackground) {
-            ButtonCoords coords = getBookButtonCoords(client.textRenderer);
-
-            if (mouseIn((int) mouseX, (int) mouseY, coords.prevX(), btnY, coords.prevW(), 10)) {
-                if (currentPage > 0) currentPage--;
-                client.player.playSound(SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0F, 1.0F);
-                return true;
-            }
-
-            if (mouseIn((int) mouseX, (int) mouseY, coords.nextX(), btnY, coords.nextW(), 10)) {
-                int totalPages = (int) Math.ceil(cachedStats.size() / (float) MAX_ROWS);
-                if (currentPage < totalPages - 1) currentPage++;
-                client.player.playSound(SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0F, 1.0F);
-                return true;
-            }
-
-            if (mouseIn((int) mouseX, (int) mouseY, coords.checkX(), btnY, coords.checkW(), 10)) {
-                showOnlyChanged = !showOnlyChanged;
-                currentPage = 0;
-                cacheStats();
-                client.player.playSound(SoundEvents.ITEM_BOOK_PAGE_TURN, 1.0F, 1.0F);
-                return true;
-            }
-        }
-        if (!AttributesPanelConfig.INSTANCE.useBookBackground) {
-            ButtonCoords coords = getBookButtonCoords(client.textRenderer);
-            if (mouseIn((int) mouseX, (int) mouseY, prevX, btnY, client.textRenderer.getWidth(prevText), 10)) {
-                if (currentPage > 0) currentPage--;
-                client.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5F, 0.5F);
-
-                return true;
-            }
-
-            if (mouseIn((int) mouseX, (int) mouseY, nextX, btnY, nextW, 10)) {
-                int totalPages = (int) Math.ceil(cachedStats.size() / (float) MAX_ROWS);
-                if (currentPage < totalPages - 1) currentPage++;
-                client.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5F, 0.5F);
-                return true;
-            }
-
-            if (mouseIn((int) mouseX, (int) mouseY, checkX, btnY, client.textRenderer.getWidth(checkLabel), 10)) {
-                showOnlyChanged = !showOnlyChanged;
-                currentPage = 0;
-                cacheStats();
-                client.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5F, 0.5F);
-                return true;
-            }
-        }
-        return false;
-    }
+    public List<StatEntry> getCachedStats() { return cachedStats; }
 
     @Override public void setFocused(boolean focused) {}
     @Override public boolean isFocused() { return false; }
     @Override public SelectionType getType() { return SelectionType.NONE; }
     @Override public void appendNarrations(NarrationMessageBuilder builder) {}
-
 }

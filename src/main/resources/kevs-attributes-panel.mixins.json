@@ -3,7 +3,8 @@
 	"package": "net.pixeldreamstudios.attributepanel.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"InventoryScreenMixin"
+		"InventoryScreenMixin",
+		"MouseScrollMixin"
 	],
 
 	"injectors": {
