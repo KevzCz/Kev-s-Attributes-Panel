@@ -3,38 +3,52 @@ package net.pixeldreamstudios.attributepanel.mixin;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
 import net.pixeldreamstudios.attributepanel.client.AttributePanelDrawable;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
-@Mixin(InventoryScreen.class)
-public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHandler> {
-    @Unique
-    private int attributespanel$iconTick = 0;
-    @Unique
-    private AttributePanelDrawable attributespanel$attributePanel;
+@Mixin(HandledScreen.class)
+public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen {
+
+    protected HandledScreenMixin(Text title) { super(title); }
+
+    @Shadow protected int x;
+    @Shadow protected int y;
+    @Shadow protected int backgroundWidth;
+    @Shadow protected int backgroundHeight;
+    @Shadow protected T handler;
+
+    @Unique private static final Identifier ATTRIBUTE_BOOK =
+            Identifier.of("kevs-attributes-panel", "textures/gui/attribute_book.png");
+
+    @Unique private int attributespanel$iconTick = 0;
+    @Unique private AttributePanelDrawable attributespanel$attributePanel;
 
     @Unique
-    private static final Identifier ATTRIBUTE_BOOK = Identifier.of("kevs-attributes-panel", "textures/gui/attribute_book.png");
-
-    public InventoryScreenMixin(PlayerScreenHandler handler, net.minecraft.entity.player.PlayerInventory inventory, Text title) {
-        super(handler, inventory, title);
+    private boolean attributespanel$shouldAttach() {
+        return this.handler instanceof PlayerScreenHandler;
     }
 
     @Inject(method = "init", at = @At("TAIL"))
     private void attributespanel$onInit(CallbackInfo ci) {
+        if (!attributespanel$shouldAttach()) return;
+
         attributespanel$attributePanel = new AttributePanelDrawable(this.x - 130, this.y, 120);
         attributespanel$attributePanel.setHeightFromInventory(this.backgroundHeight);
 
@@ -42,9 +56,10 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
         this.addSelectableChild(attributespanel$attributePanel);
     }
 
-
     @Inject(method = "render", at = @At("TAIL"))
     private void attributespanel$onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        if (!attributespanel$shouldAttach()) return;
+
         attributespanel$iconTick++;
         if (attributespanel$attributePanel != null) {
             attributespanel$attributePanel.tick();
@@ -91,6 +106,7 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
 
     @Inject(method = "render", at = @At("RETURN"))
     private void attributespanel$renderTooltipAfterEverything(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        if (!attributespanel$shouldAttach()) return;
         if (attributespanel$attributePanel != null && attributespanel$attributePanel.isExpanded()) {
             attributespanel$attributePanel.renderTooltip(context);
         }
@@ -98,6 +114,8 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void attributespanel$onMouseClick(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+        if (!attributespanel$shouldAttach()) return;
+
         if (attributespanel$attributePanel != null) {
             int iconSize = 9;
             int buttonX = this.x + this.backgroundWidth / 2 + AttributesPanelConfig.INSTANCE.xOffset;
@@ -106,22 +124,17 @@ public abstract class InventoryScreenMixin extends HandledScreen<PlayerScreenHan
             if (mouseX >= buttonX && mouseX <= buttonX + iconSize &&
                     mouseY >= buttonY && mouseY <= buttonY + iconSize) {
                 attributespanel$attributePanel.toggle();
-                // optional: focus panel here if you want
-                // this.setFocused(attributespanel$attributePanel);
                 cir.setReturnValue(true);
                 cir.cancel();
                 return;
             }
 
             if (attributespanel$attributePanel.mouseClicked(mouseX, mouseY, button)) {
-                // 👇 IMPORTANT: make dragging/drag events work
                 this.setFocused(attributespanel$attributePanel);
                 if (button == 0) this.setDragging(true);
-
                 cir.setReturnValue(true);
                 cir.cancel();
             }
         }
     }
-
 }

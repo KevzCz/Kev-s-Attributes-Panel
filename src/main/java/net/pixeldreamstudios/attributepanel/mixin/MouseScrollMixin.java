@@ -19,7 +19,6 @@ import java.util.List;
 @Mixin(Mouse.class)
 public abstract class MouseScrollMixin {
 
-    // yarn: Mouse#onMouseScroll(long window, double horizontal, double vertical)
     @Inject(method = "onMouseScroll(JDD)V", at = @At("HEAD"), cancellable = true)
     private void attributespanel$globalScrollHook(long window, double horizontal, double vertical, CallbackInfo ci) {
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -28,7 +27,6 @@ public abstract class MouseScrollMixin {
 
         if (!(screen instanceof ParentElement parent)) return;
 
-        // Convert raw window coords -> scaled screen coords
         double scaledX = mc.mouse.getX() * (double) mc.getWindow().getScaledWidth()  / (double) mc.getWindow().getWidth();
         double scaledY = mc.mouse.getY() * (double) mc.getWindow().getScaledHeight() / (double) mc.getWindow().getHeight();
 
@@ -39,7 +37,7 @@ public abstract class MouseScrollMixin {
             if (e instanceof AttributePanelDrawable panel && panel.isExpanded()) {
                 boolean used = panel.mouseScrolled(scaledX, scaledY, horizontal, vertical);
                 if (used) {
-                    ci.cancel(); // stop vanilla from also handling it
+                    ci.cancel();
                     return;
                 }
             }
