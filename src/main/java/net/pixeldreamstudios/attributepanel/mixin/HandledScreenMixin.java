@@ -50,7 +50,7 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
         if (!attributespanel$shouldAttach()) return;
 
         attributespanel$attributePanel = new AttributePanelDrawable(this.x - 130, this.y, 120);
-        attributespanel$attributePanel.setHeightFromInventory(this.backgroundHeight);
+        attributespanel$attributePanel.setHeightFromInventory(166);
 
         this.addDrawableChild(attributespanel$attributePanel);
         this.addSelectableChild(attributespanel$attributePanel);
