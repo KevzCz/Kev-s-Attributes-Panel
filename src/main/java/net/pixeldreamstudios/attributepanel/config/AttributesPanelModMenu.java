@@ -6,7 +6,6 @@ import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
-import me.shedaniel.clothconfig2.impl.builders.SubCategoryBuilder;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -37,10 +36,8 @@ public class AttributesPanelModMenu implements ModMenuApi {
                 .setTitle(Text.translatable("config.attributepanel.title"));
         final var eb = builder.entryBuilder();
 
-
         final ConfigCategory cat = builder.getOrCreateCategory(
                 Text.translatable("config.attributepanel.category.general"));
-
 
         cat.addEntry(eb.startIntField(Text.translatable("config.attributepanel.x_offset"),
                         AttributesPanelConfig.INSTANCE.xOffset)
@@ -51,9 +48,23 @@ public class AttributesPanelModMenu implements ModMenuApi {
 
         cat.addEntry(eb.startIntField(Text.translatable("config.attributepanel.y_offset"),
                         AttributesPanelConfig.INSTANCE.yOffset)
-                .setDefaultValue(66)
+                .setDefaultValue(10)
                 .setTooltip(Text.translatable("config.attributepanel.y_offset.tooltip"))
                 .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.yOffset = v)
+                .build());
+
+        cat.addEntry(eb.startIntField(Text.literal("Panel X offset (relative to inventory)"),
+                        AttributesPanelConfig.INSTANCE.panelOffsetX)
+                .setDefaultValue(-130)
+                .setTooltip(Text.literal("Horizontal offset from the inventory’s top-left (negative = left of it)."))
+                .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.panelOffsetX = v)
+                .build());
+
+        cat.addEntry(eb.startIntField(Text.literal("Panel Y offset (relative to inventory)"),
+                        AttributesPanelConfig.INSTANCE.panelOffsetY)
+                .setDefaultValue(0)
+                .setTooltip(Text.literal("Vertical offset from the inventory’s top-left."))
+                .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.panelOffsetY = v)
                 .build());
 
         AbstractConfigListEntry<AttributesPanelConfig.GuiStyle> guiStyleEntry =
@@ -65,6 +76,7 @@ public class AttributesPanelModMenu implements ModMenuApi {
                         .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.guiStyle = v)
                         .build();
         cat.addEntry(guiStyleEntry);
+
         cat.addEntry(eb.startStrList(
                         Text.literal("Percent attributes (0..1)"),
                         new ArrayList<>(AttributesPanelConfig.INSTANCE.percentAttributes))
@@ -204,7 +216,6 @@ public class AttributesPanelModMenu implements ModMenuApi {
         return builder.build();
     }
 
-    /* ---------- Small reusable custom entry: a single inline button ---------- */
     static final class InlineButtonEntry extends AbstractConfigListEntry<Void> {
         private final ButtonWidget button;
         private final Text label;
@@ -245,8 +256,6 @@ public class AttributesPanelModMenu implements ModMenuApi {
         @Override public List<? extends Element> children() { return List.of(button); }
         @Override public List<? extends Selectable> narratables() { return List.of(button); }
     }
-
-    /* ------------------------ Helpers ------------------------ */
 
     private static AttributesPanelConfig.CompactSettings safeSettings() {
         if (AttributesPanelConfig.INSTANCE.compact == null) {

@@ -13,7 +13,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
 import net.pixeldreamstudios.attributepanel.client.AttributePanelDrawable;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.Shadow;
@@ -49,7 +48,10 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
     private void attributespanel$onInit(CallbackInfo ci) {
         if (!attributespanel$shouldAttach()) return;
 
-        attributespanel$attributePanel = new AttributePanelDrawable(this.x - 130, this.y, 120);
+        int panelX = this.x + AttributesPanelConfig.INSTANCE.panelOffsetX;
+        int panelY = this.y + AttributesPanelConfig.INSTANCE.panelOffsetY;
+
+        attributespanel$attributePanel = new AttributePanelDrawable(panelX, panelY, 120);
         attributespanel$attributePanel.setHeightFromInventory(166);
 
         this.addDrawableChild(attributespanel$attributePanel);

@@ -18,23 +18,10 @@ import java.util.List;
  * {
  *   "xOffset": -61,
  *   "yOffset": 10,
+ *   "panelOffsetX": -130,
+ *   "panelOffsetY": 0,
  *   "guiStyle": "COMPACT",
- *   "compact": {
- *     "headers": [
- *       {
- *         "header": "Offense [kevs-attributes-panel:textures/gui/offense.png]",
- *         "attributes": [
- *           {"id": "minecraft:attack_damage", "icon": "kevs-attributes-panel:textures/icons/atk.png"},
- *         ],
- *       },
- *       {
- *         "header": "[kevs-attributes-panel:textures/gui/defense.png]"
- *       }
- *     ],
- *     "otherHeader": "Other",
- *     "otherHeaderIcon": null,
- *     "globalBlacklist": ["examplemod:hidden_attr"]
- *   }
+ *   "compact": { ... }
  * }
  */
 public class AttributesPanelConfig {
@@ -43,13 +30,13 @@ public class AttributesPanelConfig {
 
     public int xOffset = -61;
     public int yOffset = 10;
+    public int panelOffsetX = -130;
+    public int panelOffsetY = 0;
 
     public GuiStyle guiStyle = GuiStyle.COMPACT;
 
-    /** Attribute ids that are stored as 0..1 but should display as percent. */
     public List<String> percentAttributes =
             new ArrayList<>(List.of("kevslibrary:armor_penetration"));
-    /** Attribute ids that are stored as 100..200 (100 = 0%) but should display as percent. */
     public List<String> percentAttributesBase100 =
             new ArrayList<>(List.of(
                     "spell_power:critical_damage",
@@ -94,6 +81,8 @@ public class AttributesPanelConfig {
     public static void apply() {
         System.out.println("[Kev's Attributes Panel] Config applied: xOffset=" + INSTANCE.xOffset
                 + ", yOffset=" + INSTANCE.yOffset
+                + ", panelOffsetX=" + INSTANCE.panelOffsetX
+                + ", panelOffsetY=" + INSTANCE.panelOffsetY
                 + ", GUI=" + INSTANCE.guiStyle);
     }
 
@@ -103,24 +92,15 @@ public class AttributesPanelConfig {
         COMPACT
     }
 
-
     public static class CompactSettings {
-        /** Ordered list of headers; remaining attributes go to "otherHeader". */
         public List<HeaderDef> headers = new ArrayList<>();
-
-        /** Title for “Other” group (hardcoded fallback if null/blank = "Other") */
         public String otherHeaderName = "Other";
-
-        /** Optional icon path for the “Other” header, e.g. "modid:textures/gui/other.png" */
         public String otherHeaderIcon = null;
-
-        /** Global blacklist: attributes matching any pattern here are hidden entirely. */
         public List<String> globalBlacklist = new ArrayList<>();
 
         public static CompactSettings defaultPreset() {
             CompactSettings s = new CompactSettings();
 
-            // Offensive
             HeaderDef offensive = new HeaderDef();
             offensive.header = "Offensive";
             offensive.attributes.add(AttributeSpec.of("minecraft:generic.attack_damage", null));
@@ -129,7 +109,6 @@ public class AttributesPanelConfig {
             offensive.attributes.add(AttributeSpec.of("ranged_weapon:haste",             null));
             s.headers.add(offensive);
 
-            // Defensive
             HeaderDef defensive = new HeaderDef();
             defensive.header = "Defensive";
             defensive.attributes.add(AttributeSpec.of("minecraft:generic.armor",                 null));
@@ -140,7 +119,6 @@ public class AttributesPanelConfig {
             defensive.attributes.add(AttributeSpec.of("minecraft:generic.knockback_resistance", null));
             s.headers.add(defensive);
 
-            // Magic
             HeaderDef magic = new HeaderDef();
             magic.header = "Magic";
             magic.attributes.add(AttributeSpec.of("spell_power:generic",          null));
@@ -163,19 +141,9 @@ public class AttributesPanelConfig {
         }
     }
 
-   public static class HeaderDef {
-        /**
-         * Header label rules:
-         *  - "Text" -> prints "Text".
-         *  - "[modid:textures/some.png]" -> icon only.
-         *  - "Text [modid:textures/some.png]" -> prints Text, then tries icon in [].
-         *    If icon missing at runtime, prints "Text [cant find texture]".
-         */
+    public static class HeaderDef {
         public String header = "Header";
-
         public List<AttributeSpec> attributes = new ArrayList<>();
-
-        /** Optional blacklist local to this header. */
         public List<String> blacklist = new ArrayList<>();
     }
 
