@@ -50,7 +50,7 @@ public class AttributesPanelConfig {
             "chance", "movement_speed"
     ));
     public List<String> percentBase100Keywords = new ArrayList<>();
-
+    public boolean forceTrackVisibleAttributes = true;
     public CompactSettings compact = CompactSettings.defaultPreset();
 
     public static AttributesPanelConfig INSTANCE = new AttributesPanelConfig();
