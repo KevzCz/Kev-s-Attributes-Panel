@@ -127,6 +127,27 @@ public class AttributesPanelModMenu implements ModMenuApi {
                 .setSaveConsumer(list -> safeSettings().globalBlacklist = list)
                 .build());
 
+        compactSC.add(eb.startBooleanToggle(Text.literal("Hide automatic \"Other\" header"),
+                        safeSettings().disableOtherHeader)
+                .setDefaultValue(false)
+                .setTooltip(Text.literal("If enabled, unmatched attributes are listed without the \"Other\" header."))
+                .setSaveConsumer(v -> safeSettings().disableOtherHeader = v)
+                .build());
+
+        compactSC.add(eb.startIntField(Text.literal("Side padding"),
+                        safeSettings().sidePadding)
+                .setDefaultValue(15)
+                .setTooltip(Text.literal("Horizontal padding between the panel texture and attribute content."))
+                .setSaveConsumer(v -> safeSettings().sidePadding = Math.max(0, v))
+                .build());
+
+        compactSC.add(eb.startFloatField(Text.literal("Text scale"),
+                        safeSettings().textScale)
+                .setDefaultValue(0.55f)
+                .setTooltip(Text.literal("Scales the attribute value and name text in the compact view."))
+                .setSaveConsumer(v -> safeSettings().textScale = Math.max(0.01f, v))
+                .build());
+
         for (int i = 0; i < workingHeaders.size(); i++) {
             final int idx = i;
             final var h = workingHeaders.get(i);

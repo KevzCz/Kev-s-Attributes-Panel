@@ -98,6 +98,10 @@ public class AttributesPanelConfig {
         public String otherHeaderIcon = null;
         public List<String> globalBlacklist = new ArrayList<>();
 
+        public boolean disableOtherHeader = false;
+        public int sidePadding = 15;
+        public float textScale = 0.55f;
+
         public static CompactSettings defaultPreset() {
             CompactSettings s = new CompactSettings();
 
@@ -136,6 +140,10 @@ public class AttributesPanelConfig {
             s.otherHeaderName = "Misc";
             s.otherHeaderIcon = null;
             s.globalBlacklist = new ArrayList<>();
+
+            s.disableOtherHeader = false;
+            s.sidePadding = 15;
+            s.textScale = 0.55f;
 
             return s;
         }

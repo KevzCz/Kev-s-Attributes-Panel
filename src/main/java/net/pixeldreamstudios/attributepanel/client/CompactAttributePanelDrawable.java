@@ -18,7 +18,6 @@ import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
@@ -39,12 +38,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static net.pixeldreamstudios.attributepanel.client.AttributePanelDrawable.formatModifierId;
+
 @Environment(EnvType.CLIENT)
 public class CompactAttributePanelDrawable implements Drawable, Element, Selectable {
     private final AttributePanelDrawable root;
 
     private static final int HEADER_AFTER_GAP = 10;
-    private static final float FONT_SCALE = 0.55f;
+    private static final float DEFAULT_FONT_SCALE = 0.55f;
     private static final float HEADER_FONT_SCALE = 1f;
     private static final int ROW_H_TEXT = 9;
     private static final int HEADER_ICON_SIZE = 9;
@@ -56,7 +56,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
     private static final int DIVIDER_PADDING = 4;
     private static final int DIVIDER_TOTAL_H = DIVIDER_TEXTURE_H + DIVIDER_PADDING;
     private static final int BULLET_SIZE = 3;
-    private static final int PADDING_X = 15;
+    private static final int DEFAULT_SIDE_PADDING = 15;
     private static final int PADDING_TOP = 20;
     private static final int PADDING_BOTTOM = 6;
 
@@ -81,7 +81,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
     private final List<Item> items = new ArrayList<>();
     private final List<Integer> prefixHeights = new ArrayList<>();
     private static final int ICON_VALUE_GAP = 5;
-    private static final int ICON_COL_W     = (int)Math.ceil(ATTR_ICON_SIZE * FONT_SCALE);
     private int scrollPx = 0;
     private static final int BULLET_Y_NUDGE = -3;
     private boolean draggingBar = false;
@@ -92,17 +91,36 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         df.setGroupingUsed(false);
         return df;
     });
+
     public CompactAttributePanelDrawable(AttributePanelDrawable root) {
         this.root = root;
     }
+
     private boolean isSearching() {
         return searchText != null && !searchText.isBlank();
     }
+
     private static String fmtValue(StatEntry stat) {
         double v = stat.percent() ? stat.current() * 100.0 : stat.current();
         if (Math.abs(v) < 1e-9) v = 0;
         String s = NUM_FMT.get().format(v);
         return stat.percent() ? s + "%" : s;
+    }
+
+    private float fontScale() {
+        var cfg = AttributesPanelConfig.INSTANCE.compact;
+        if (cfg != null && cfg.textScale > 0f) return cfg.textScale;
+        return DEFAULT_FONT_SCALE;
+    }
+
+    private int sidePadding() {
+        var cfg = AttributesPanelConfig.INSTANCE.compact;
+        if (cfg != null && cfg.sidePadding >= 0) return cfg.sidePadding;
+        return DEFAULT_SIDE_PADDING;
+    }
+
+    private int iconColW() {
+        return (int) Math.ceil(ATTR_ICON_SIZE * fontScale());
     }
 
     @Override
@@ -118,9 +136,9 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
 
         buildLayout();
 
-
-        int innerX = bgX + PADDING_X;
-        int innerW = bgW - (PADDING_X * 2);
+        int padX = sidePadding();
+        int innerX = bgX + padX;
+        int innerW = bgW - (padX * 2);
         int innerY = bgY + PADDING_TOP;
         int innerH = Math.max(0, bgH - (PADDING_TOP + PADDING_BOTTOM));
 
@@ -129,7 +147,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         if (scrollPx > maxOffset) scrollPx = maxOffset;
         if (scrollPx < 0) scrollPx = 0;
 
-        int iconsY = bgY + 14;
+        int iconsY = bgY + 9;
 
         int searchX = bgX + 7;
         ctx.drawTexture(SEARCH_ICON, searchX, iconsY, 0, 0, SEARCH_ICON_SIZE, SEARCH_ICON_SIZE, SEARCH_ICON_SIZE, SEARCH_ICON_SIZE);
@@ -200,8 +218,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             ctx.disableScissor();
         }
 
-
-
         if (items.isEmpty()) {
             drawEmptyState(ctx, tr, innerX, innerW, innerY);
             return;
@@ -211,7 +227,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
 
         int idx = firstVisibleIndex(scrollPx);
         int y = innerY - (scrollPx - prefixAt(idx)) + (isSearching() ? 5: 0);
-
 
         boolean tooltipQueued = false;
 
@@ -240,6 +255,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
 
         drawScrollbar(ctx, bgX, bgY, bgW, innerY, innerH, contentH);
     }
+
     private void drawEmptyState(DrawContext ctx, TextRenderer tr, int innerX, int innerW, int innerY) {
         String msg = isSearching()
                 ? "No attributes match \"" + searchText + "\""
@@ -254,6 +270,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             y += tr.fontHeight + 2;
         }
     }
+
     private Identifier resolveAttrIcon(Identifier attrId, AttributesPanelConfig.CompactSettings cfg) {
         if (attrId == null || cfg == null) return null;
 
@@ -280,6 +297,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         }
         return null;
     }
+
     private void handleStatHover(TextRenderer tr, int innerX, int y, StatRow row, int mouseX, int mouseY) {
         String rawName = row.stat.name().getString();
         NameSplit split = splitLeadingIcon(rawName);
@@ -287,16 +305,17 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         String valueStr = fmtValue(row.stat);
 
         final int iconLeft  = innerX;
-        final int valueLeft = iconLeft + ICON_COL_W + ICON_VALUE_GAP;
+        final int valueLeft = iconLeft + iconColW() + ICON_VALUE_GAP;
 
-        int valueW = (int)Math.ceil(tr.getWidth(valueStr) * FONT_SCALE);
-        int spaceW = (int)Math.ceil(tr.getWidth(" ") * FONT_SCALE);
-        int nameW  = (int)Math.ceil(tr.getWidth(split.cleanName) * FONT_SCALE);
+        float fs = fontScale();
+        int valueW = (int)Math.ceil(tr.getWidth(valueStr) * fs);
+        int spaceW = (int)Math.ceil(tr.getWidth(" ") * fs);
+        int nameW  = (int)Math.ceil(tr.getWidth(split.cleanName) * fs);
         int nameLeft = valueLeft + valueW + spaceW;
 
         int rowY0 = y, rowY1 = y + ROW_H_TEXT;
 
-        int iconX0 = iconLeft,           iconX1 = iconLeft + ICON_COL_W;
+        int iconX0 = iconLeft,           iconX1 = iconLeft + iconColW();
         int valueX0 = valueLeft,         valueX1 = valueLeft + valueW;
         int nameX0  = nameLeft,          nameX1  = nameLeft  + nameW;
 
@@ -310,7 +329,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             showCalculationTooltip(row.stat, mouseX, mouseY);
         }
     }
-
 
     private void showDescriptionTooltip(StatEntry stat, int mouseX, int mouseY) {
         var tip = AttributeDescriptionProvider.getTooltip(stat.attribute().value());
@@ -440,7 +458,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
                     }
                 }
 
-
                 if (!foundSource) {
                     String[] pathParts = rawId.getPath().split("\\.",2)[0].split("/");
                     if (pathParts.length > 0) {
@@ -496,7 +513,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
                         }
                     }
                 }
-
 
                 if (rawId.getNamespace().equals("tiered")) {
                     String[] pp = rawId.getPath().split("_");
@@ -580,7 +596,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         int bgY = root.top();
         int bgW = root.panelWidth() + 16;
 
-        int iconsY = bgY + 14;
+        int iconsY = bgY + 9;
         int searchX = bgX + 7;
         if (mouseX >= searchX && mouseX <= searchX + SEARCH_ICON_SIZE &&
                 mouseY >= iconsY && mouseY <= iconsY + SEARCH_ICON_SIZE) {
@@ -635,7 +651,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         }
         return false;
     }
-
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
@@ -907,8 +922,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             return;
         }
 
-
-
         if (stats.isEmpty()) return;
 
         if (isSearching()) {
@@ -951,7 +964,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             for (var se : headerLayout.stats) items.add(Item.stat(se, headerLayout.iconFor(se)));
         }
 
-
         List<StatEntry> remaining = byId.entrySet().stream()
                 .filter(e -> !assigned.contains(e.getKey()))
                 .map(Map.Entry::getValue)
@@ -959,8 +971,9 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
                 .sorted(Comparator.comparing(se -> se.name().getString()))
                 .collect(Collectors.toList());
 
-        if (!remaining.isEmpty()) {
+        if (!remaining.isEmpty() && !cfg.disableOtherHeader) {
             if (!firstSection) items.add(Item.divider());
+
             HeaderLayout other = new HeaderLayout();
             other.headerText = (cfg.otherHeaderName == null || cfg.otherHeaderName.isBlank()) ? "Other" : cfg.otherHeaderName;
             other.headerIcon = tryIdentifier(cfg.otherHeaderIcon);
@@ -970,11 +983,11 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             items.add(Item.header(other));
             for (var se : remaining) {
                 Identifier id = Registries.ATTRIBUTE.getId(se.attribute().value());
-                Identifier icon = resolveAttrIcon(id, cfg); // look up any configured icon
+                Identifier icon = resolveAttrIcon(id, cfg);
                 if (icon != null) {
-                    items.add(Item.stat(se, icon));   // use icon
+                    items.add(Item.stat(se, icon));
                 } else {
-                    items.add(Item.statBullet(se));   // fall back to bullet
+                    items.add(Item.statBullet(se));
                 }
             }
         }
@@ -985,6 +998,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             acc += it.height;
         }
     }
+
     public boolean wantsKeys() {
         return searchVisible && searchFocused;
     }
@@ -1060,6 +1074,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
 
         return out;
     }
+
     private int orderScore(Identifier id, AttributesPanelConfig.CompactSettings cfg) {
         if (id == null || cfg == null || cfg.headers == null) return Integer.MAX_VALUE;
 
@@ -1087,7 +1102,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         }
         return Integer.MAX_VALUE - 1;
     }
-
 
     private record WildcardSpec(String pattern, Identifier icon) {}
 
@@ -1235,23 +1249,25 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         NameSplit split = splitLeadingIcon(rawName);
 
         final int iconLeft  = innerX;
-        final int valueLeft = iconLeft + ICON_COL_W + ICON_VALUE_GAP;
+        final int valueLeft = iconLeft + iconColW() + ICON_VALUE_GAP;
+
+        float fs = fontScale();
 
         if (split.leadingIcon != null) {
-            int glyphW = (int)Math.ceil(tr.getWidth(split.leadingIcon) * FONT_SCALE);
-            int drawXpx = iconLeft + Math.max(0, (ICON_COL_W - glyphW) / 2);
+            int glyphW = (int)Math.ceil(tr.getWidth(split.leadingIcon) * fs);
+            int drawXpx = iconLeft + Math.max(0, (iconColW() - glyphW) / 2);
 
             ctx.getMatrices().push();
-            ctx.getMatrices().scale(FONT_SCALE, FONT_SCALE, 1f);
-            int drawX = (int)(drawXpx / FONT_SCALE);
-            int drawY = (int)(y / FONT_SCALE);
+            ctx.getMatrices().scale(fs, fs, 1f);
+            int drawX = (int)(drawXpx / fs);
+            int drawY = (int)(y / fs);
             ctx.drawTextWithShadow(tr, split.leadingIcon, drawX, drawY, 0xFFFFFF);
             ctx.getMatrices().pop();
 
         } else if (statRow.icon != null) {
-            float s = FONT_SCALE * (ATTR_ICON_SIZE / (float)TEX_ICON_SRC_PX);
-            int iconDrawW = (int)Math.round(ATTR_ICON_SIZE * FONT_SCALE);
-            int drawXpx = iconLeft + Math.max(0, (ICON_COL_W - iconDrawW) / 2);
+            float s = fs * (ATTR_ICON_SIZE / (float)TEX_ICON_SRC_PX);
+            int iconDrawW = (int)Math.round(ATTR_ICON_SIZE * fs);
+            int drawXpx = iconLeft + Math.max(0, (iconColW() - iconDrawW) / 2);
 
             ctx.getMatrices().push();
             ctx.getMatrices().scale(s, s, 1f);
@@ -1261,31 +1277,29 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
                     TEX_ICON_SRC_PX, TEX_ICON_SRC_PX);
             ctx.getMatrices().pop();
         } else if (statRow.bullet) {
-            int bx = iconLeft + Math.max(0, (ICON_COL_W - BULLET_SIZE) / 2);
+            int bx = iconLeft + Math.max(0, (iconColW() - BULLET_SIZE) / 2);
             int by = y + Math.max(0, (ROW_H_TEXT - BULLET_SIZE) / 2) + BULLET_Y_NUDGE;
             ctx.fill(bx, by, bx + BULLET_SIZE, by + BULLET_SIZE, 0xFFFFFFFF);
         }
 
-
         String valueStr = fmtValue(statRow.stat);
 
-        int valueW = (int)Math.ceil(tr.getWidth(valueStr) * FONT_SCALE);
-        int spaceW = (int)Math.ceil(tr.getWidth(" ") * FONT_SCALE);
+        int valueW = (int)Math.ceil(tr.getWidth(valueStr) * fs);
+        int spaceW = (int)Math.ceil(tr.getWidth(" ") * fs);
         int nameLeft = valueLeft + valueW + spaceW;
 
         ctx.getMatrices().push();
-        ctx.getMatrices().scale(FONT_SCALE, FONT_SCALE, 1f);
+        ctx.getMatrices().scale(fs, fs, 1f);
 
-        int vDrawX = (int)(valueLeft / FONT_SCALE);
-        int drawY  = (int)(y / FONT_SCALE);
+        int vDrawX = (int)(valueLeft / fs);
+        int drawY  = (int)(y / fs);
         ctx.drawTextWithShadow(tr, valueStr, vDrawX, drawY, 0xFFFFFF);
 
-        int nDrawX = (int)(nameLeft / FONT_SCALE);
+        int nDrawX = (int)(nameLeft / fs);
         ctx.drawTextWithShadow(tr, split.cleanName, nDrawX, drawY, 0xFFFFFF);
 
         ctx.getMatrices().pop();
     }
-
 
     private static final class NameSplit {
         final String cleanName;
@@ -1474,7 +1488,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             return it;
         }
 
-        // new:
         static Item statBullet(StatEntry se) {
             Item it = new Item(ItemType.STAT, ROW_H_TEXT);
             it.stat = new StatRow(se, null, true);
@@ -1489,8 +1502,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         StatRow(StatEntry se, Identifier icon) {
             this(se, icon, false);
         }
-
-        // explicit: choose bullet
         StatRow(StatEntry se, Identifier icon, boolean bullet) {
             this.stat = se;
             this.icon = icon;
