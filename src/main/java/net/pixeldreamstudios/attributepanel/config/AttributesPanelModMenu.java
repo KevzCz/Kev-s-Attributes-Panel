@@ -103,6 +103,10 @@ public class AttributesPanelModMenu implements ModMenuApi {
                 .setTooltip(Text.literal("If an attribute ID isn’t listed above, match these substrings in the translation key (100 = 0%)."))
                 .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.percentBase100Keywords = list)
                 .build());
+        cat.addEntry(eb.startBooleanToggle(Text.literal("Force track visible attributes"),
+                        AttributesPanelConfig.INSTANCE.forceTrackVisibleAttributes)
+                .setTooltip(Text.literal("Attributes shown on the panel will be force synced from the server. Requires restart to take effect!"))
+                .build());
 
         final var compactSC = eb.startSubCategory(Text.literal("Compact options"));
         compactSC.setExpanded(true);
