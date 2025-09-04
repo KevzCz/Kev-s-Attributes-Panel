@@ -77,6 +77,13 @@ public class AttributesPanelModMenu implements ModMenuApi {
                         .build();
         cat.addEntry(guiStyleEntry);
 
+        cat.addEntry(eb.startBooleanToggle(Text.literal("Animate book icon on hover"),
+                        AttributesPanelConfig.INSTANCE.hoverIconAnimation)
+                .setDefaultValue(true)
+                .setTooltip(Text.literal("If disabled, the book icon will only change transparency when hovered."))
+                .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.hoverIconAnimation = v)
+                .build());
+
         cat.addEntry(eb.startStrList(
                         Text.literal("Percent attributes (0..1)"),
                         new ArrayList<>(AttributesPanelConfig.INSTANCE.percentAttributes))

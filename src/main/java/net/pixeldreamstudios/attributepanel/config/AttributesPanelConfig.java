@@ -21,6 +21,7 @@ import java.util.List;
  *   "panelOffsetX": -130,
  *   "panelOffsetY": 0,
  *   "guiStyle": "COMPACT",
+ *   "hoverIconAnimation": true,
  *   "compact": { ... }
  * }
  */
@@ -34,6 +35,8 @@ public class AttributesPanelConfig {
     public int panelOffsetY = 0;
 
     public GuiStyle guiStyle = GuiStyle.COMPACT;
+
+    public boolean hoverIconAnimation = true;
 
     public List<String> percentAttributes =
             new ArrayList<>(List.of("kevslibrary:armor_penetration"));
@@ -83,7 +86,8 @@ public class AttributesPanelConfig {
                 + ", yOffset=" + INSTANCE.yOffset
                 + ", panelOffsetX=" + INSTANCE.panelOffsetX
                 + ", panelOffsetY=" + INSTANCE.panelOffsetY
-                + ", GUI=" + INSTANCE.guiStyle);
+                + ", GUI=" + INSTANCE.guiStyle
+                + ", hoverIconAnimation=" + INSTANCE.hoverIconAnimation);
     }
 
     public enum GuiStyle {

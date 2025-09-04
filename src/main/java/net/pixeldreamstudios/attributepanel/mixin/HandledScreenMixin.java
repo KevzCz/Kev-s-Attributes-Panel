@@ -81,7 +81,8 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
                     ((color >> 24) & 0xFF) / 255f
             );
 
-            if (hovered) {
+            boolean animate = AttributesPanelConfig.INSTANCE.hoverIconAnimation;
+            if (hovered && animate) {
                 float time = attributespanel$iconTick / 8f;
                 float pulse = (float) Math.sin(time);
                 float scale = 1.0f + 0.1f * pulse;
