@@ -9,22 +9,6 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Global config + compact GUI customization.
- *
- * JSON file: config/attributespanel.json
- *
- * Example compact section:
- * {
- *   "xOffset": -61,
- *   "yOffset": 10,
- *   "panelOffsetX": -130,
- *   "panelOffsetY": 0,
- *   "guiStyle": "COMPACT",
- *   "hoverIconAnimation": true,
- *   "compact": { ... }
- * }
- */
 public class AttributesPanelConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File CONFIG_FILE = new File("config/attributespanel.json");
@@ -96,6 +80,11 @@ public class AttributesPanelConfig {
         COMPACT
     }
 
+    public enum TextTheme {
+        LIGHT,
+        DARK
+    }
+
     public static class CompactSettings {
         public List<HeaderDef> headers = new ArrayList<>();
         public String otherHeaderName = "Other";
@@ -105,6 +94,8 @@ public class AttributesPanelConfig {
         public boolean disableOtherHeader = false;
         public int sidePadding = 15;
         public float textScale = 0.55f;
+
+        public TextTheme textTheme = TextTheme.DARK;
 
         public static CompactSettings defaultPreset() {
             CompactSettings s = new CompactSettings();
@@ -148,6 +139,8 @@ public class AttributesPanelConfig {
             s.disableOtherHeader = false;
             s.sidePadding = 15;
             s.textScale = 0.55f;
+
+            s.textTheme = TextTheme.DARK;
 
             return s;
         }

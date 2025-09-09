@@ -159,6 +159,18 @@ public class AttributesPanelModMenu implements ModMenuApi {
                 .setSaveConsumer(v -> safeSettings().textScale = Math.max(0.01f, v))
                 .build());
 
+        compactSC.add(
+                eb.startEnumSelector(
+                                Text.literal("Text theme"),
+                                AttributesPanelConfig.TextTheme.class,
+                                safeSettings().textTheme
+                        )
+                        .setDefaultValue(AttributesPanelConfig.TextTheme.DARK)
+                        .setTooltip(Text.literal("Choose LIGHT for dark text, or DARK for white text in the Compact panel."))
+                        .setSaveConsumer(v -> safeSettings().textTheme = v)
+                        .build()
+        );
+
         for (int i = 0; i < workingHeaders.size(); i++) {
             final int idx = i;
             final var h = workingHeaders.get(i);

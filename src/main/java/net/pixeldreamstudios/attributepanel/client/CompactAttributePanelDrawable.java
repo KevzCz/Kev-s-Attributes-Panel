@@ -28,7 +28,6 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.pixeldreamstudios.attributepanel.compat.TrinketCompat;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
-import org.joml.RoundingMode;
 import org.lwjgl.glfw.GLFW;
 
 import java.text.DecimalFormat;
@@ -123,6 +122,45 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         return (int) Math.ceil(ATTR_ICON_SIZE * fontScale());
     }
 
+
+    private boolean isLightTextTheme() {
+        var cfg = AttributesPanelConfig.INSTANCE.compact;
+        return cfg != null && cfg.textTheme == AttributesPanelConfig.TextTheme.LIGHT;
+    }
+
+    private int colorBody() {
+        return isLightTextTheme() ? 0x1E1E1E : 0xFFFFFF;
+    }
+
+    private int colorHeader() {
+        return isLightTextTheme() ? 0x111827 : 0xFFFFFF;
+    }
+
+    private int colorMuted() {
+        return isLightTextTheme() ? 0x6B7280 : 0xAAAAAA;
+    }
+
+    private int colorBullet() {
+        return isLightTextTheme() ? 0x2D2D2D : 0xFFFFFF;
+    }
+
+    private int colorSearchText() {
+        return isLightTextTheme() ? 0x1E1E1E : 0xFFFFFF;
+    }
+
+    private int colorSearchPlaceholder() {
+        return isLightTextTheme() ? 0x888888 : 0xCCCCCC;
+    }
+
+    private int colorCaretFill() {
+        return isLightTextTheme() ? 0xFF000000 : 0xFFFFFFFF;
+    }
+
+    private int colorSelectionFill() {
+        return isLightTextTheme() ? 0x66333333 : 0x66FFFFFF;
+    }
+
+
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         TextRenderer tr = root.mc().textRenderer;
@@ -191,7 +229,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             if (textScrollPx > maxScroll)           textScrollPx = maxScroll;
 
             String toShow = searchText.isBlank() ? "Search…" : searchText;
-            int color = searchText.isBlank() ? 0xCCCCCC : 0xFFFFFF;
+            int color = searchText.isBlank() ? colorSearchPlaceholder() : colorSearchText();
 
             ctx.enableScissor(barX + 1, barY + 1, barX + barW - 1, barY + barH - 1);
 
@@ -203,7 +241,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
                     int selW    = tr.getWidth(searchText.substring(a, b));
                     int sx0 = textX + beforeW - textScrollPx;
                     int sx1 = sx0 + selW;
-                    ctx.fill(sx0, barY + 3, sx1, barY + barH - 3, 0x66FFFFFF);
+                    ctx.fill(sx0, barY + 3, sx1, barY + barH - 3, colorSelectionFill());
                 }
             }
 
@@ -212,11 +250,12 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
 
             if (searchFocused) {
                 int caretDrawX = textX + caretPx - textScrollPx;
-                ctx.fill(caretDrawX, barY + 3, caretDrawX + 1, barY + barH - 3, 0xFFFFFFFF);
+                ctx.fill(caretDrawX, barY + 3, caretDrawX + 1, barY + barH - 3, colorCaretFill());
             }
 
             ctx.disableScissor();
         }
+
 
         if (items.isEmpty()) {
             drawEmptyState(ctx, tr, innerX, innerW, innerY);
@@ -227,8 +266,6 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
 
         int idx = firstVisibleIndex(scrollPx);
         int y = innerY - (scrollPx - prefixAt(idx)) + (isSearching() ? 5: 0);
-
-        boolean tooltipQueued = false;
 
         while (idx < items.size()) {
             Item it = items.get(idx);
@@ -266,10 +303,11 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         int y = innerY + 7;
 
         for (OrderedText line : tr.wrapLines(Text.literal(msg), wrapWidth)) {
-            ctx.drawTextWithShadow(tr, line, x, y, 0xAAAAAA);
+            ctx.drawTextWithShadow(tr, line, x, y, colorMuted());
             y += tr.fontHeight + 2;
         }
     }
+
 
     private Identifier resolveAttrIcon(Identifier attrId, AttributesPanelConfig.CompactSettings cfg) {
         if (attrId == null || cfg == null) return null;
@@ -1228,7 +1266,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             ctx.getMatrices().scale(HEADER_FONT_SCALE, HEADER_FONT_SCALE, 1f);
             int drawX = (int) (x / HEADER_FONT_SCALE);
             int drawY = (int) (y / HEADER_FONT_SCALE);
-            ctx.drawTextWithShadow(tr, header.headerText, drawX, drawY, 0xFFFFFF);
+            ctx.drawTextWithShadow(tr, header.headerText, drawX, drawY, colorHeader());
             ctx.getMatrices().pop();
             x += (int) Math.ceil(tr.getWidth(header.headerText) * HEADER_FONT_SCALE);
         }
@@ -1239,10 +1277,11 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
             ctx.getMatrices().scale(HEADER_FONT_SCALE, HEADER_FONT_SCALE, 1f);
             int drawX = (int) (x / HEADER_FONT_SCALE);
             int drawY = (int) (y / HEADER_FONT_SCALE);
-            ctx.drawTextWithShadow(tr, missingMarker, drawX, drawY, 0xAAAAAA);
+            ctx.drawTextWithShadow(tr, missingMarker, drawX, drawY, colorMuted());
             ctx.getMatrices().pop();
         }
     }
+
 
     private void drawStat(DrawContext ctx, TextRenderer tr, int innerX, int y, StatRow statRow) {
         String rawName = statRow.stat.name().getString();
@@ -1279,7 +1318,7 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
         } else if (statRow.bullet) {
             int bx = iconLeft + Math.max(0, (iconColW() - BULLET_SIZE) / 2);
             int by = y + Math.max(0, (ROW_H_TEXT - BULLET_SIZE) / 2) + BULLET_Y_NUDGE;
-            ctx.fill(bx, by, bx + BULLET_SIZE, by + BULLET_SIZE, 0xFFFFFFFF);
+            ctx.fill(bx, by, bx + BULLET_SIZE, by + BULLET_SIZE, 0xFF000000 | colorBullet());
         }
 
         String valueStr = fmtValue(statRow.stat);
@@ -1293,13 +1332,15 @@ public class CompactAttributePanelDrawable implements Drawable, Element, Selecta
 
         int vDrawX = (int)(valueLeft / fs);
         int drawY  = (int)(y / fs);
-        ctx.drawTextWithShadow(tr, valueStr, vDrawX, drawY, 0xFFFFFF);
+        ctx.drawTextWithShadow(tr, valueStr, vDrawX, drawY, colorBody());
 
         int nDrawX = (int)(nameLeft / fs);
-        ctx.drawTextWithShadow(tr, split.cleanName, nDrawX, drawY, 0xFFFFFF);
+        ctx.drawTextWithShadow(tr, split.cleanName, nDrawX, drawY, colorBody());
 
         ctx.getMatrices().pop();
     }
+
+
 
     private static final class NameSplit {
         final String cleanName;
