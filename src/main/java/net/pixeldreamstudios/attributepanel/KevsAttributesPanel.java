@@ -3,8 +3,11 @@ package net.pixeldreamstudios.attributepanel;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.registry.Registries;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.pixeldreamstudios.attributepanel.command.AttributeSnapshotCommand;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
@@ -22,6 +25,14 @@ public class KevsAttributesPanel implements ModInitializer {
 		AttributesPanelConfig.load();
 		ServerNetwork.register();
 		trackVisibleAttributes();
+		FabricLoader.getInstance().getModContainer(MOD_ID).ifPresent(modContainer -> {
+			ResourceManagerHelper.registerBuiltinResourcePack(
+					Identifier.of(MOD_ID, "kap_minimal_dark"),
+					modContainer,
+					Text.literal("KAP Minimal Dark"),
+					ResourcePackActivationType.NORMAL
+			);
+		});
 	}
 
 	public void trackVisibleAttributes() {

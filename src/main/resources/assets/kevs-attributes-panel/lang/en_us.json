@@ -1,7 +1,7 @@
 {
   "config.attributepanel.title": "Kev's Library Config",
   "config.attributepanel.category.general": "General",
-
+  "kevs-attributes-panel:kap_minimal_dark": "KAP Minimal Dark",
   "config.attributepanel.x_offset": "Book icon X Offset",
   "config.attributepanel.x_offset.tooltip": "Horizontal position of the attribute panel icon",
 
