@@ -32,6 +32,12 @@ public class KevsAttributesPanel implements ModInitializer {
 					Text.literal("KAP Minimal Dark"),
 					ResourcePackActivationType.NORMAL
 			);
+			ResourceManagerHelper.registerBuiltinResourcePack(
+					Identifier.of(MOD_ID, "kevs_attributes_panel_old"),
+					modContainer,
+					Text.literal("Old Panel Icons"),
+					ResourcePackActivationType.NORMAL
+			);
 		});
 	}
 
