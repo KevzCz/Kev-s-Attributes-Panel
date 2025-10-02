@@ -2,21 +2,31 @@ package net.pixeldreamstudios.attributepanel.client;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.util.InputUtil;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
+import net.pixeldreamstudios.attributepanel.compat.TrinketCompat;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static net.pixeldreamstudios.attributepanel.client.AttributePanelDrawable.formatModifierId;
 
 @Environment(EnvType.CLIENT)
 class BookAttributePanelDrawable {
@@ -26,6 +36,8 @@ class BookAttributePanelDrawable {
     private static final Identifier INFO_ICON   = Identifier.of("kevs-attributes-panel", "textures/gui/attribute_book.png");
     private static final int INFO_ICON_SIZE = 8;
 
+    private static final Identifier PERMA    = Identifier.of("kevs-attributes-panel", "textures/gui/perma.png");
+    private static final Identifier EQUIPPED = Identifier.of("kevs-attributes-panel", "textures/gui/equipped.png");
 
     BookAttributePanelDrawable(AttributePanelDrawable root) {
         this.root = root;
@@ -116,7 +128,6 @@ class BookAttributePanelDrawable {
                 && mouseY >= infoY && mouseY <= infoY + INFO_ICON_SIZE) {
             drawGlobalBonusTooltip(mouseX, mouseY);
         }
-
         drawBookTooltipButton(context, tr, hoverIndex, mouseX, mouseY, rowHeight, padding);
     }
 
@@ -201,9 +212,296 @@ class BookAttributePanelDrawable {
     }
 
     private void drawBookTooltipButton(DrawContext context, TextRenderer tr, int hoverIndex, int mouseX, int mouseY, int rowHeight, int padding) {
-        root.drawTooltipContent(context, tr, hoverIndex, mouseX, mouseY, rowHeight, padding);
+        if (hoverIndex >= 0 && hoverIndex < root.getCachedStats().size()) {
+            StatEntry stat = root.getCachedStats().get(hoverIndex);
+            showCalculationTooltip(stat, mouseX, mouseY);
+        }
         int btnY = root.top() + root.panelHeight() - 20;
         drawBookButtons(context, tr, mouseX, mouseY, btnY);
+    }
+
+    private void showCalculationTooltip(StatEntry stat, int mouseX, int mouseY) {
+        var client = root.mc();
+        var player = client.player;
+        if (player == null) return;
+
+        boolean shiftDown = InputUtil.isKeyPressed(
+                client.getWindow().getHandle(),
+                client.options.sneakKey.getDefaultKey().getCode()
+        );
+
+        EntityAttributeInstance instance = player.getAttributeInstance(stat.attribute());
+
+        List<Text> lines = new ArrayList<>();
+        List<ItemStack> icons = new ArrayList<>();
+        List<Identifier> texIcons = new ArrayList<>();
+
+        lines.add(Text.translatable("attributepanel.tooltip.base", String.format("%.2f", stat.base())));
+        icons.add(ItemStack.EMPTY); texIcons.add(null);
+        if (instance != null) {
+            lines.add(Text.translatable("attributepanel.tooltip.final", String.format("%.2f", instance.getValue())));
+            icons.add(ItemStack.EMPTY); texIcons.add(null);
+        }
+
+        double flat = 0.0, multBase = 0.0, multTotal = 0.0;
+        List<Double> flatParts = new ArrayList<>();
+        List<Double> baseMultParts = new ArrayList<>();
+        List<Double> totalMultParts = new ArrayList<>();
+
+        double puffFlat = 0.0, puffBase = 0.0, puffTotal = 0.0;
+        boolean hasPuffish = false;
+
+        var unmatchedTrinketSources = new ArrayList<TrinketCompat.TrinketModifierSource>();
+        if (FabricLoader.getInstance().isModLoaded("trinkets")) {
+            unmatchedTrinketSources.addAll(TrinketCompat.getTrinketModifierSources(player));
+        }
+
+        if (instance != null && !instance.getModifiers().isEmpty()) {
+            lines.add(Text.empty()); icons.add(ItemStack.EMPTY); texIcons.add(null);
+            lines.add(Text.translatable("attributepanel.message.modifiers").formatted(Formatting.YELLOW));
+            icons.add(ItemStack.EMPTY); texIcons.add(null);
+
+            for (EntityAttributeModifier mod : instance.getModifiers()) {
+                var rawId = mod.id();
+
+                if (rawId.getNamespace().equals("tiered")) {
+                    String fullPath = rawId.getPath();
+                    String[] parts = fullPath.split("/");
+                    if (parts.length >= 3 && parts[parts.length - 1].contains("_")) {
+                        rawId = Identifier.of("tiered", parts[parts.length - 1]);
+                    }
+                }
+
+                if (rawId.getNamespace().equals("puffish_skills")) {
+                    hasPuffish = true;
+                    switch (mod.operation()) {
+                        case ADD_VALUE -> puffFlat += mod.value();
+                        case ADD_MULTIPLIED_BASE -> puffBase += mod.value();
+                        case ADD_MULTIPLIED_TOTAL -> puffTotal += mod.value();
+                    }
+                    continue;
+                }
+
+                String opText;
+                Formatting color;
+                switch (mod.operation()) {
+                    case ADD_VALUE -> {
+                        double v = mod.value(); flat += v; flatParts.add(v);
+                        color = v >= 0 ? Formatting.GREEN : Formatting.RED;
+                        opText = (v >= 0 ? "+" : "") + String.format("%.2f", v);
+                    }
+                    case ADD_MULTIPLIED_BASE -> {
+                        double v = mod.value(); multBase += v; baseMultParts.add(v);
+                        int p = (int) Math.round(v * 100);
+                        color = p >= 0 ? Formatting.GREEN : Formatting.RED;
+                        opText = (p >= 0 ? "+" : "") + p + "% Base";
+                    }
+                    case ADD_MULTIPLIED_TOTAL -> {
+                        double v = mod.value(); multTotal += v; totalMultParts.add(v);
+                        int p = (int) Math.round(v * 100);
+                        color = p >= 0 ? Formatting.GREEN : Formatting.RED;
+                        opText = (p >= 0 ? "+" : "") + p + "% Total";
+                    }
+                    default -> { color = Formatting.GRAY; opText = "?"; }
+                }
+
+                String fullPath = rawId.getPath();
+                String[] idParts = fullPath.split("\\.", 2);
+                Identifier modId = Identifier.of(rawId.getNamespace(), idParts[0]);
+                String customName = (idParts.length > 1) ? idParts[1] : null;
+                boolean usedCustomName = false;
+
+                Text displayName = Text.literal(formatModifierId(modId));
+                ItemStack iconStack = ItemStack.EMPTY;
+                boolean foundSource = false;
+
+                SEARCH_EQUIPPED:
+                for (EquipmentSlot slot : EquipmentSlot.values()) {
+                    ItemStack stack = player.getEquippedStack(slot);
+                    if (stack.isEmpty()) continue;
+                    final boolean[] matched = {false};
+                    var comp = stack.get(net.minecraft.component.DataComponentTypes.ATTRIBUTE_MODIFIERS);
+                    if (comp != null) {
+                        comp.applyModifiers(slot, (attr, entryMod) -> {
+                            if (entryMod.id().equals(mod.id()) && attr.equals(stat.attribute())) matched[0] = true;
+                        });
+                    }
+                    if (!matched[0]) {
+                        stack.getItem().getAttributeModifiers().applyModifiers(slot, (attr, entryMod) -> {
+                            if (entryMod.id().equals(mod.id()) && attr.equals(stat.attribute())) matched[0] = true;
+                        });
+                    }
+                    if (matched[0]) {
+                        iconStack = stack;
+                        try { if (!usedCustomName) displayName = stack.getName().copy(); } catch (Exception ignored) {}
+                        foundSource = true;
+                        break SEARCH_EQUIPPED;
+                    }
+                }
+
+                if (!foundSource) {
+                    String[] pathParts = rawId.getPath().split("\\.",2)[0].split("/");
+                    if (pathParts.length > 0) {
+                        Identifier guess = Identifier.of(rawId.getNamespace(), pathParts[pathParts.length-1]);
+                        if (Registries.ITEM.containsId(guess)) {
+                            net.minecraft.item.Item item = Registries.ITEM.get(guess);
+                            iconStack = new ItemStack(item);
+                            displayName = iconStack.getName().copy().formatted(iconStack.getRarity().getFormatting());
+                            foundSource = true;
+                        }
+                    }
+                }
+                if (customName != null && !customName.isBlank()) {
+                    Set<String> ignoredArmorNames = Set.of("helmet", "chestplate", "leggings", "boots");
+                    if (!ignoredArmorNames.contains(customName.toLowerCase(Locale.ROOT))) {
+                        String pretty = Arrays.stream(customName.split("_"))
+                                .map(s -> s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1).toLowerCase(Locale.ROOT))
+                                .collect(Collectors.joining(" "));
+                        displayName = Text.literal(pretty).formatted(Formatting.LIGHT_PURPLE);
+                        usedCustomName = true;
+                    }
+                }
+
+                if (!foundSource && FabricLoader.getInstance().isModLoaded("trinkets")) {
+                    for (var it = unmatchedTrinketSources.iterator(); it.hasNext();) {
+                        var src = it.next();
+                        if (src.id().value().equals(stat.attribute().value())
+                                && src.modifier().operation()==mod.operation()
+                                && Math.abs(src.modifier().value()-mod.value())<0.0001) {
+                            iconStack = src.stack();
+                            try { displayName = iconStack.getName().copy().formatted(iconStack.getRarity().getFormatting()); }
+                            catch (Exception e) { displayName = Text.literal("Unknown Trinket").formatted(Formatting.GRAY); }
+                            foundSource = true;
+                            it.remove();
+                            break;
+                        }
+                    }
+                }
+
+                if (!foundSource) {
+                    for (var se : player.getStatusEffects()) {
+                        StatusEffect effect = se.getEffectType().value();
+                        int amp = se.getAmplifier();
+                        Map<EntityAttribute, EntityAttributeModifier> map = new HashMap<>();
+                        effect.forEachAttributeModifier(amp, (attribute, modifier) -> map.put(attribute.value(), modifier));
+                        if (map.containsKey(stat.attribute().value())) {
+                            EntityAttributeModifier pm = map.get(stat.attribute().value());
+                            if (pm.operation()==mod.operation() && Math.abs(pm.value()-mod.value())<0.0001) {
+                                displayName = Text.translatable(effect.getTranslationKey());
+                                iconStack = root.createColoredPotionItem(effect);
+                                foundSource = true; break;
+                            }
+                        }
+                    }
+                }
+
+                boolean printedCustom = false;
+
+                if (rawId.getNamespace().equals("rpg-systems")) {
+                    String p = rawId.getPath();
+                    if (p.startsWith("title/")) {
+                        String[] seg = p.split("/");
+
+                        boolean perma = seg.length > 1 && "perma".equals(seg[1]);
+                        String titlePathSlug;
+
+                        if (perma) {
+                            titlePathSlug = (seg.length >= 4) ? seg[3] : "unknown";
+                        } else {
+                            titlePathSlug = (seg.length >= 3) ? seg[2] : "unknown";
+                        }
+
+                        String prettyTitle = Arrays.stream(titlePathSlug.split("_"))
+                                .filter(s -> !s.isBlank())
+                                .map(s -> s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1).toLowerCase(Locale.ROOT))
+                                .collect(Collectors.joining(" "));
+
+                        MutableText line = Text.literal(prettyTitle).formatted(Formatting.GOLD)
+                                .append(Text.literal(" ").append(Text.literal(opText).formatted(color)));
+
+                        lines.add(line);
+                        icons.add(ItemStack.EMPTY);
+                        texIcons.add(perma ? PERMA : EQUIPPED);
+
+                        printedCustom = true;
+                    }
+                }
+
+                if (printedCustom) {
+                    continue;
+                } else if (rawId.getNamespace().equals("tiered")) {
+                    String[] pp = rawId.getPath().split("_");
+                    String tier = pp.length>0 ? (pp[0].substring(0,1).toUpperCase()+pp[0].substring(1).toLowerCase()) : "Tiered";
+                    lines.add(Text.literal(tier+" Bonus: ").formatted(Formatting.AQUA)
+                            .append(Text.literal(opText).formatted(Formatting.GREEN)));
+                    icons.add(new ItemStack(Items.ANVIL)); texIcons.add(null);
+                } else {
+                    lines.add(displayName.copy().append(" ").append(Text.literal(opText).formatted(color)));
+                    icons.add(iconStack); texIcons.add(null);
+                }
+            }
+
+            if (hasPuffish) {
+                lines.add(Text.translatable("attributepanel.tooltip.skill_tree_bonus").formatted(Formatting.AQUA));
+                icons.add(ItemStack.EMPTY); texIcons.add(null);
+                if (puffFlat != 0.0)  { lines.add(Text.literal(String.format("- %+,.2f", puffFlat)).formatted(Formatting.GREEN));  icons.add(ItemStack.EMPTY); texIcons.add(null); }
+                if (puffBase != 0.0)  { lines.add(Text.literal(String.format("- %+d%% Base",  (int)(puffBase*100))).formatted(Formatting.GREEN)); icons.add(ItemStack.EMPTY); texIcons.add(null); }
+                if (puffTotal != 0.0) { lines.add(Text.literal(String.format("- %+d%% Total", (int)(puffTotal*100))).formatted(Formatting.GREEN)); icons.add(ItemStack.EMPTY); texIcons.add(null); }
+                lines.add(Text.empty()); icons.add(ItemStack.EMPTY); texIcons.add(null);
+            }
+        }
+
+        if (stat.isChanged()) {
+            lines.add(Text.empty()); icons.add(ItemStack.EMPTY); texIcons.add(null);
+
+            if (shiftDown) {
+                double base = stat.base();
+                double basePlusAdd = base + flat;
+                double afterBaseMult = (multBase!=0.0) ? basePlusAdd * (1.0+multBase) : basePlusAdd;
+                double finalValue = (multTotal!=0.0) ? afterBaseMult * (1.0+multTotal) : afterBaseMult;
+
+                lines.add(Text.translatable("attributepanel.tooltip.calculated").formatted(Formatting.DARK_GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+
+                if (!flatParts.isEmpty()) {
+                    String sum = flatParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
+                    lines.add(Text.literal(String.format("⟶ %.2f + (%s) = %.2f", base, sum, basePlusAdd)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                } else {
+                    lines.add(Text.literal(String.format("= %.2f", base)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                }
+
+                if (!baseMultParts.isEmpty()) {
+                    String sum = baseMultParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
+                    lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %s) = %.2f", basePlusAdd, sum, afterBaseMult)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                }
+                if (!totalMultParts.isEmpty()) {
+                    String sum = totalMultParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
+                    lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %s) = %.2f", afterBaseMult, sum, finalValue)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                }
+
+                lines.add(Text.literal("= " + String.format("%.2f", finalValue)).formatted(Formatting.GREEN)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+
+                if (instance != null) {
+                    double actual = instance.getValue();
+                    double delta = actual - finalValue;
+                    if (Math.abs(delta) > 0.001 && finalValue > 0.001) {
+                        double pct = Math.abs(delta)/finalValue;
+                        lines.add(Text.empty()); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        if (delta > 0) {
+                            lines.add(Text.translatable("attributepanel.tooltip.indirect_bonus", String.format("%.2f", delta)).formatted(Formatting.DARK_GREEN)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                            lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %.2f) = %.2f", finalValue, pct, actual)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        } else {
+                            lines.add(Text.translatable("attributepanel.tooltip.indirect_decrease", String.format("%.2f", -delta)).formatted(Formatting.RED)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                            lines.add(Text.literal(String.format("⟶ %.2f × (1.00 - %.2f) = %.2f", finalValue, pct, actual)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        }
+                    }
+                }
+            } else {
+                lines.add(Text.translatable("attributepanel.tooltip.hold_shift").formatted(Formatting.GRAY));
+                icons.add(ItemStack.EMPTY); texIcons.add(null);
+            }
+        }
+
+        root.enqueueTooltipRich(lines, icons, texIcons, mouseX, mouseY);
     }
 
     private void drawGlobalBonusTooltip(int mouseX, int mouseY) {

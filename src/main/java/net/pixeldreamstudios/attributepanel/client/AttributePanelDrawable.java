@@ -50,6 +50,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
 
     protected List<Text> queuedTooltip = null;
     protected List<ItemStack> queuedTooltipIcons = null;
+    protected List<Identifier> queuedTooltipTextures = null;
     protected int tooltipX, tooltipY;
 
     private final BookAttributePanelDrawable bookGui;
@@ -181,9 +182,20 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
 
         for (int i = 0; i < lines.size(); i++) {
             int lineY = drawY + i * (tr.fontHeight + 4);
-            ItemStack icon = (icons != null && i < icons.size()) ? icons.get(i) : ItemStack.EMPTY;
+
+            ItemStack icon = (queuedTooltipIcons != null && i < queuedTooltipIcons.size())
+                    ? queuedTooltipIcons.get(i) : ItemStack.EMPTY;
+
+            Identifier tex = (queuedTooltipTextures != null && i < queuedTooltipTextures.size())
+                    ? queuedTooltipTextures.get(i) : null;
+
             int iconOffset = 0;
-            if (!icon.isEmpty()) {
+
+            if (tex != null) {
+                final int texSize = 12;
+                context.drawTexture(tex, drawX, lineY, 0, 0, texSize, texSize, texSize, texSize);
+                iconOffset = 18;
+            } else if (!icon.isEmpty()) {
                 context.getMatrices().push();
                 context.getMatrices().translate(drawX, lineY, 0);
                 context.getMatrices().scale(0.85f, 0.85f, 1f);
@@ -191,6 +203,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 context.getMatrices().pop();
                 iconOffset = 18;
             }
+
             int textX = drawX + iconOffset;
             context.drawText(tr, lines.get(i), textX, lineY + 2, 0xFFFFFF, false);
         }
@@ -265,12 +278,14 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         }
         return false;
     }
-
-
-
     protected void enqueueTooltip(List<Text> lines, List<ItemStack> icons, int mouseX, int mouseY) {
+        enqueueTooltipRich(lines, icons, null, mouseX, mouseY);
+    }
+
+    protected void enqueueTooltipRich(List<Text> lines, List<ItemStack> icons, List<Identifier> textures, int mouseX, int mouseY) {
         this.queuedTooltip = lines;
         this.queuedTooltipIcons = icons;
+        this.queuedTooltipTextures = textures;
         this.tooltipX = mouseX;
         this.tooltipY = mouseY;
     }
