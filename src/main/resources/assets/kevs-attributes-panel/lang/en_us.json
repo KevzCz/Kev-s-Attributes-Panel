@@ -104,5 +104,14 @@
   "description.attribute.name.player.mining_efficiency": "Improves effectiveness when mining blocks.",
   "description.attribute.name.player.sneaking_speed": "Controls movement speed while sneaking.",
   "description.attribute.name.player.submerged_mining_speed": "Improves mining speed while underwater.",
-  "description.attribute.name.player.sweeping_damage_ratio": "Percentage of damage dealt to nearby mobs by sweep attacks."
+  "description.attribute.name.player.sweeping_damage_ratio": "Percentage of damage dealt to nearby mobs by sweep attacks.",
+
+  "description.attribute.name.spell_engine.evasion_chance": "The chance to evade incoming attacks.",
+
+  "description.attribute.name.ranged_weapon.damage": "Ranged weapon (arrow) damage.",
+  "description.attribute.name.ranged_weapon.haste": "Ranged weapons fire rate.",
+
+  "description.attribute.name.combat_roll.count": "Number of combat rolls available.",
+  "description.attribute.name.combat_roll.recharge": "Recharge speed of combat rolls.",
+  "description.attribute.name.combat_roll.distance": "How far a combat roll pushes you."
 }
