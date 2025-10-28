@@ -19,6 +19,7 @@ public class AttributeDataSerializer {
             EntityAttributeInstance instance = player.getAttributeInstance(attributeEntry);
             if (instance == null) continue;
 
+
             Identifier id = attributeEntry.getKey().map(key -> key.getValue()).orElse(null);
             if (id == null) continue;
 
@@ -32,6 +33,8 @@ public class AttributeDataSerializer {
 
             for (EntityAttributeModifier mod : instance.getModifiers()) {
                 NbtCompound modTag = new NbtCompound();
+                System.out.println("Modifier ID: " + mod.id() + " for attribute: " + id);
+
                 modTag.putString("Id", mod.id().toString());
                 modTag.putDouble("Value", mod.value());
                 modTag.putString("Source", guessSource(mod.id().getNamespace()));

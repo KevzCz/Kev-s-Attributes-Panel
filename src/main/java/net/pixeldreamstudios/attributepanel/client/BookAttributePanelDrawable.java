@@ -12,9 +12,13 @@ import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
@@ -35,6 +39,7 @@ class BookAttributePanelDrawable {
     private static final Identifier BOOK_TEXTURE = Identifier.of("minecraft", "textures/gui/book.png");
     private static final Identifier INFO_ICON   = Identifier.of("kevs-attributes-panel", "textures/gui/attribute_book.png");
     private static final int INFO_ICON_SIZE = 8;
+    private static final Identifier DD_POWER_ICON = Identifier.of("dungeon_difficulty", "textures/symbol/power_level.png");
 
     private static final Identifier PERMA    = Identifier.of("kevs-attributes-panel", "textures/gui/perma.png");
     private static final Identifier EQUIPPED = Identifier.of("kevs-attributes-panel", "textures/gui/equipped.png");
@@ -315,6 +320,69 @@ class BookAttributePanelDrawable {
                 ItemStack iconStack = ItemStack.EMPTY;
                 boolean foundSource = false;
 
+                // 1) Dungeon Difficulty: always icon texture, no item stack
+                if ("dungeon_difficulty".equals(rawId.getNamespace())) {
+                    displayName = Text.literal("Power Boost").formatted(Formatting.AQUA);
+                    lines.add(displayName.copy().append(" ").append(Text.literal(opText).formatted(color)));
+                    icons.add(ItemStack.EMPTY);
+                    texIcons.add(DD_POWER_ICON);
+                    continue;
+                }
+
+                // 2) Enchantments: detect and show enchanted book icon + enchantment name (runs BEFORE equipment search)
+                try {
+                    String lowerPath = fullPath.toLowerCase(Locale.ROOT);
+                    if (lowerPath.startsWith("enchantment.") || lowerPath.startsWith("enchantment/")
+                            || lowerPath.contains("enchantment")) {
+                        String possible = fullPath;
+                        int idxDot = fullPath.indexOf('.');
+                        int idxSlash = fullPath.indexOf('/');
+                        if (idxDot >= 0 && fullPath.startsWith("enchantment.")) {
+                            possible = fullPath.substring("enchantment.".length());
+                        } else if (idxSlash >= 0 && fullPath.startsWith("enchantment/")) {
+                            possible = fullPath.substring("enchantment/".length());
+                        } else {
+                            if (fullPath.startsWith("enchantment")) {
+                                int sep = Math.max(fullPath.indexOf('.'), fullPath.indexOf('/'));
+                                if (sep >= 0 && sep + 1 < fullPath.length()) possible = fullPath.substring(sep + 1);
+                            }
+                        }
+
+                        int stop = possible.length();
+                        int s1 = possible.indexOf('/');
+                        int s2 = possible.indexOf('.');
+                        if (s1 >= 0) stop = Math.min(stop, s1);
+                        if (s2 >= 0) stop = Math.min(stop, s2);
+                        String enchKey = (stop > 0 && stop <= possible.length()) ? possible.substring(0, stop) : possible;
+
+                        if (enchKey != null && !enchKey.isBlank() && root.mc().player != null && root.mc().player.getWorld() != null) {
+                            Identifier enchId = Identifier.of(rawId.getNamespace(), enchKey);
+
+                            var drm = root.mc().player.getWorld().getRegistryManager();
+                            Registry<net.minecraft.enchantment.Enchantment> enchantmentRegistry = drm.get(RegistryKeys.ENCHANTMENT);
+
+                            RegistryKey<net.minecraft.enchantment.Enchantment> key = RegistryKey.of(RegistryKeys.ENCHANTMENT, enchId);
+                            var entryOpt = enchantmentRegistry.getEntry(key);
+
+                            if (entryOpt.isPresent()) {
+                                var enchEntry = entryOpt.get();
+                                int lvl = Math.max(1, (int) Math.round(Math.abs(mod.value())));
+                                iconStack = EnchantedBookItem.forEnchantment(new net.minecraft.enchantment.EnchantmentLevelEntry(enchEntry, lvl));
+                                net.minecraft.enchantment.Enchantment enchVal = enchEntry.value();
+                                displayName = enchVal.description().copy().formatted(Formatting.AQUA);
+                                foundSource = true;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                if (foundSource) {
+                    lines.add(displayName.copy().append(" ").append(Text.literal(opText).formatted(color)));
+                    icons.add(iconStack); texIcons.add(null);
+                    continue;
+                }
+
+                // 3) Equipped items: try to match the exact modifier id and attribute
                 SEARCH_EQUIPPED:
                 for (EquipmentSlot slot : EquipmentSlot.values()) {
                     ItemStack stack = player.getEquippedStack(slot);
@@ -339,10 +407,11 @@ class BookAttributePanelDrawable {
                     }
                 }
 
+                // 4) Guess item by path segment if not found and not DD
                 if (!foundSource) {
-                    String[] pathParts = rawId.getPath().split("\\.",2)[0].split("/");
+                    String[] pathParts = rawId.getPath().split("\\.", 2)[0].split("/");
                     if (pathParts.length > 0) {
-                        Identifier guess = Identifier.of(rawId.getNamespace(), pathParts[pathParts.length-1]);
+                        Identifier guess = Identifier.of(rawId.getNamespace(), pathParts[pathParts.length - 1]);
                         if (Registries.ITEM.containsId(guess)) {
                             net.minecraft.item.Item item = Registries.ITEM.get(guess);
                             iconStack = new ItemStack(item);
@@ -351,6 +420,78 @@ class BookAttributePanelDrawable {
                         }
                     }
                 }
+
+                // 5) Set bonus (Spell Engine)
+                if (!foundSource) {
+                    try {
+                        String rawPath = rawId.getPath().toLowerCase(Locale.ROOT);
+                        if (rawPath.contains("set_bonus")) {
+                            List<net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack> sourced = new ArrayList<>();
+
+                            for (EquipmentSlot slot : EquipmentSlot.values()) {
+                                ItemStack s = player.getEquippedStack(slot);
+                                if (s != null && !s.isEmpty()) {
+                                    sourced.add(new net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack(s, slot.getName()));
+                                }
+                            }
+
+                            if (FabricLoader.getInstance().isModLoaded("trinkets")) {
+                                try {
+                                    for (var src : TrinketCompat.getTrinketModifierSources(player)) {
+                                        sourced.add(new net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack(src.stack(), "trinket"));
+                                    }
+                                } catch (Exception ignored) {}
+                            }
+
+                            var results = net.spell_engine.api.item.set.EquipmentSet.collectFrom(sourced, player.getWorld());
+
+                            for (var res : results) {
+                                var setEntry = res.set();
+                                if (setEntry.getKey().isPresent()) {
+                                    Identifier setId = setEntry.getKey().get().getValue();
+                                    if (setId.getNamespace().equals(rawId.getNamespace())) {
+                                        List<ItemStack> setItems = res.items();
+                                        if (setItems != null && !setItems.isEmpty()) {
+                                            int idx = (int) ((System.currentTimeMillis() / 1000L) % setItems.size());
+                                            ItemStack chosen = setItems.get(idx);
+                                            iconStack = chosen;
+
+                                            Text setNameText;
+                                            try {
+                                                String tkey = net.spell_engine.api.item.set.EquipmentSet.translationKey(setEntry);
+                                                setNameText = Text.translatable(tkey);
+                                                if (setNameText.getString().equals(tkey)) {
+                                                    String rawDefName = setEntry.value().name();
+                                                    if (rawDefName != null && !rawDefName.isBlank()) {
+                                                        setNameText = Text.literal(rawDefName);
+                                                    } else {
+                                                        setNameText = Text.literal(setId.getPath());
+                                                    }
+                                                }
+                                            } catch (Exception e) {
+                                                String rawDefName = "";
+                                                try { rawDefName = setEntry.value().name(); } catch (Exception ignored) {}
+                                                if (rawDefName != null && !rawDefName.isBlank()) {
+                                                    setNameText = Text.literal(rawDefName);
+                                                } else {
+                                                    setNameText = Text.literal(setId.getPath());
+                                                }
+                                            }
+
+                                            displayName = setNameText.copy().formatted(Formatting.AQUA)
+                                                    .append(Text.literal(" Set").formatted(Formatting.AQUA));
+
+                                            foundSource = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                // 6) Pretty-print custom suffix, unless it's just armor slot names
                 if (customName != null && !customName.isBlank()) {
                     Set<String> ignoredArmorNames = Set.of("helmet", "chestplate", "leggings", "boots");
                     if (!ignoredArmorNames.contains(customName.toLowerCase(Locale.ROOT))) {
@@ -362,6 +503,7 @@ class BookAttributePanelDrawable {
                     }
                 }
 
+                // 7) Trinkets match fallback
                 if (!foundSource && FabricLoader.getInstance().isModLoaded("trinkets")) {
                     for (var it = unmatchedTrinketSources.iterator(); it.hasNext();) {
                         var src = it.next();
@@ -378,6 +520,7 @@ class BookAttributePanelDrawable {
                     }
                 }
 
+                // 8) Status effects
                 if (!foundSource) {
                     for (var se : player.getStatusEffects()) {
                         StatusEffect effect = se.getEffectType().value();
