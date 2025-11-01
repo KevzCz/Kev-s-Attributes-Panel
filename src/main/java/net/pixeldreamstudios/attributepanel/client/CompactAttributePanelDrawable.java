@@ -68,15 +68,13 @@
 
         private static final int SCROLLBAR_GAP = 3;
         private static final float SCROLLBAR_W = 3.15f;
-
         private static final int SCROLL_STEP_PX = 18;
-
         private static final Identifier BACKGROUND_TEXTURE = Identifier.of("kevs-attributes-panel", "textures/gui/gui.png");
         private static final Identifier DIVIDER_TEXTURE = Identifier.of("kevs-attributes-panel", "textures/gui/divider.png");
         private static final Identifier PERMA = Identifier.of("kevs-attributes-panel", "textures/gui/perma.png");
         private static final Identifier EQUIPPED = Identifier.of("kevs-attributes-panel", "textures/gui/equipped.png");
         private static final Identifier DD_POWER_ICON = Identifier.of("dungeon_difficulty", "textures/symbol/power_level.png");
-
+        private static final Identifier FTB_QUEST_BOOK_ICON = Identifier.of("ftbquests", "textures/item/book.png");
         private static final Identifier INFO_ICON = Identifier.of("kevs-attributes-panel", "textures/gui/info.png");
         private static final int INFO_ICON_SIZE = 12;
         private static final Identifier SEARCH_ICON = Identifier.of("kevs-attributes-panel", "textures/gui/search.png");
@@ -574,7 +572,7 @@
                         continue;
                     }
 
-                    if (!foundSource && !"dungeon_difficulty".equals(rawId.getNamespace())) {
+                    if (!foundSource && !"dungeon_difficulty".equals(rawId.getNamespace()) && !"morequesttypes".equals(rawId.getNamespace())) {
                         String[] pathParts = rawId.getPath().split("\\.",2)[0].split("/");
                         if (pathParts.length > 0) {
                             Identifier guess = Identifier.of(rawId.getNamespace(), pathParts[pathParts.length-1]);
@@ -659,7 +657,7 @@
                     }
 
 
-                    if (customName != null && !customName.isBlank() && !"dungeon_difficulty".equals(rawId.getNamespace())) {
+                    if (customName != null && !customName.isBlank() && !"dungeon_difficulty".equals(rawId.getNamespace()) && !"morequesttypes".equals(rawId.getNamespace())) {
                         Set<String> ignoredArmorNames = Set.of("helmet", "chestplate", "leggings", "boots");
                         if (!ignoredArmorNames.contains(customName.toLowerCase(Locale.ROOT))) {
                             String pretty = Arrays.stream(customName.split("_"))
@@ -709,7 +707,13 @@
                         texIcons.add(DD_POWER_ICON);
                         continue;
                     }
-
+                    if ("morequesttypes".equals(rawId.getNamespace())) {
+                        displayName = Text.literal("Quest Reward").formatted(Formatting.AQUA);
+                        lines.add(displayName.copy().append(" ").append(Text.literal(opText).formatted(color)));
+                        icons.add(ItemStack.EMPTY);
+                        texIcons.add(FTB_QUEST_BOOK_ICON);
+                        continue;
+                    }
                     boolean printedCustom = false;
 
 

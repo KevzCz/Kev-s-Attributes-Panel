@@ -40,7 +40,7 @@ class BookAttributePanelDrawable {
     private static final Identifier INFO_ICON   = Identifier.of("kevs-attributes-panel", "textures/gui/attribute_book.png");
     private static final int INFO_ICON_SIZE = 8;
     private static final Identifier DD_POWER_ICON = Identifier.of("dungeon_difficulty", "textures/symbol/power_level.png");
-
+    private static final Identifier FTB_QUEST_BOOK_ICON = Identifier.of("ftbquests", "textures/item/book.png");
     private static final Identifier PERMA    = Identifier.of("kevs-attributes-panel", "textures/gui/perma.png");
     private static final Identifier EQUIPPED = Identifier.of("kevs-attributes-panel", "textures/gui/equipped.png");
 
@@ -135,11 +135,7 @@ class BookAttributePanelDrawable {
         }
         drawBookTooltipButton(context, tr, hoverIndex, mouseX, mouseY, rowHeight, padding);
     }
-
     boolean mouseClicked(double mouseX, double mouseY, int button) {
-
-        int infoX = root.left() + root.panelWidth() - INFO_ICON_SIZE - 95;
-        int infoY = root.top() + 10;
 
         int btnY = root.top() + root.panelHeight() - 20;
         ButtonCoords coords = getBookButtonCoords(root.mc().textRenderer);
@@ -320,7 +316,6 @@ class BookAttributePanelDrawable {
                 ItemStack iconStack = ItemStack.EMPTY;
                 boolean foundSource = false;
 
-                // 1) Dungeon Difficulty: always icon texture, no item stack
                 if ("dungeon_difficulty".equals(rawId.getNamespace())) {
                     displayName = Text.literal("Power Boost").formatted(Formatting.AQUA);
                     lines.add(displayName.copy().append(" ").append(Text.literal(opText).formatted(color)));
@@ -328,8 +323,13 @@ class BookAttributePanelDrawable {
                     texIcons.add(DD_POWER_ICON);
                     continue;
                 }
-
-                // 2) Enchantments: detect and show enchanted book icon + enchantment name (runs BEFORE equipment search)
+                if ("morequesttypes".equals(rawId.getNamespace())) {
+                    displayName = Text.literal("Quest Reward").formatted(Formatting.AQUA);
+                    lines.add(displayName.copy().append(" ").append(Text.literal(opText).formatted(color)));
+                    icons.add(ItemStack.EMPTY);
+                    texIcons.add(FTB_QUEST_BOOK_ICON);
+                    continue;
+                }
                 try {
                     String lowerPath = fullPath.toLowerCase(Locale.ROOT);
                     if (lowerPath.startsWith("enchantment.") || lowerPath.startsWith("enchantment/")
@@ -382,7 +382,6 @@ class BookAttributePanelDrawable {
                     continue;
                 }
 
-                // 3) Equipped items: try to match the exact modifier id and attribute
                 SEARCH_EQUIPPED:
                 for (EquipmentSlot slot : EquipmentSlot.values()) {
                     ItemStack stack = player.getEquippedStack(slot);
@@ -407,7 +406,6 @@ class BookAttributePanelDrawable {
                     }
                 }
 
-                // 4) Guess item by path segment if not found and not DD
                 if (!foundSource) {
                     String[] pathParts = rawId.getPath().split("\\.", 2)[0].split("/");
                     if (pathParts.length > 0) {
@@ -421,7 +419,6 @@ class BookAttributePanelDrawable {
                     }
                 }
 
-                // 5) Set bonus (Spell Engine)
                 if (!foundSource) {
                     try {
                         String rawPath = rawId.getPath().toLowerCase(Locale.ROOT);
@@ -491,7 +488,6 @@ class BookAttributePanelDrawable {
                     } catch (Exception ignored) {}
                 }
 
-                // 6) Pretty-print custom suffix, unless it's just armor slot names
                 if (customName != null && !customName.isBlank()) {
                     Set<String> ignoredArmorNames = Set.of("helmet", "chestplate", "leggings", "boots");
                     if (!ignoredArmorNames.contains(customName.toLowerCase(Locale.ROOT))) {
@@ -503,7 +499,6 @@ class BookAttributePanelDrawable {
                     }
                 }
 
-                // 7) Trinkets match fallback
                 if (!foundSource && FabricLoader.getInstance().isModLoaded("trinkets")) {
                     for (var it = unmatchedTrinketSources.iterator(); it.hasNext();) {
                         var src = it.next();
@@ -520,7 +515,6 @@ class BookAttributePanelDrawable {
                     }
                 }
 
-                // 8) Status effects
                 if (!foundSource) {
                     for (var se : player.getStatusEffects()) {
                         StatusEffect effect = se.getEffectType().value();
