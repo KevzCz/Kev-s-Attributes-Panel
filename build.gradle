@@ -28,6 +28,9 @@ repositories {
 		name = "Ladysnake Libs"
 		url = 'https://maven.ladysnake.org/releases'
 	}
+	maven {
+		url "https://cursemaven.com"
+	}
 	mavenCentral()
 }
 
@@ -50,6 +53,8 @@ dependencies {
 	modCompileOnly("com.terraformersmc:modmenu:11.0.3")
 	modImplementation("net.fabricmc.fabric-api:fabric-api:0.115.4+1.21.1")
 	modCompileOnly("maven.modrinth:spell-engine:1.8.9+1.21.1-fabric")
+
+	modCompileOnly "curse.maven:icon-leading-tooltip-1335640:7206890"
 }
 
 processResources {

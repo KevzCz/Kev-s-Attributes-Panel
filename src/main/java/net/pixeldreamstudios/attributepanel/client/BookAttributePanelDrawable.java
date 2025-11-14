@@ -25,6 +25,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
 import net.pixeldreamstudios.attributepanel.compat.TrinketCompat;
 
 import java.util.*;
@@ -78,9 +79,13 @@ class BookAttributePanelDrawable {
             int rowIndex = i - startIndex;
             int yOffset = rowY + rowIndex * rowHeight;
 
-            String statName = stat.name().getString();
-            int maxNameWidth = root.panelWidth() / 2 - 7;
+            String rawName = stat.name().getString();
+            String translationKey = Text.translatable(stat.attribute().value().getTranslationKey()).getString();
 
+            IconLeadingCompat.IconSplit split = IconLeadingCompat.extractIconWithFallback(rawName, translationKey);
+            String statName = split.cleanName;
+
+            int maxNameWidth = root.panelWidth() / 2 - 7;
             context.fill(root.left() + 12, yOffset + rowHeight + 2, root.left() + root.panelWidth() - 12, yOffset + rowHeight + 1, 0xFFD6C4A3);
 
             String topLine, bottomLine = null;
@@ -105,9 +110,11 @@ class BookAttributePanelDrawable {
             int nameY = yOffset + (rowHeight - 8) / 2;
 
             if (bottomLine == null) {
-                context.drawText(tr, topLine, nameX, nameY, 0x3A2F23, false);
+                String displayText = split.hasIcon() ? split.leadingIcon + " " + topLine : topLine;
+                context.drawText(tr, displayText, nameX, nameY, 0x3A2F23, false);
             } else {
-                context.drawText(tr, topLine, nameX, yOffset + 4, 0x3A2F23, false);
+                String displayTop = split.hasIcon() ? split.leadingIcon + " " + topLine : topLine;
+                context.drawText(tr, displayTop, nameX, yOffset + 4, 0x3A2F23, false);
                 context.drawText(tr, bottomLine, nameX, yOffset + 12, 0x6D5C48, false);
             }
 

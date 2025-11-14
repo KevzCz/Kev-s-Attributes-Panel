@@ -33,6 +33,7 @@
     import net.minecraft.text.Text;
     import net.minecraft.util.Formatting;
     import net.minecraft.util.Identifier;
+    import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
     import net.pixeldreamstudios.attributepanel.compat.TrinketCompat;
     import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
     import org.lwjgl.glfw.GLFW;
@@ -122,7 +123,7 @@
 
         private int sidePadding() {
             var cfg = AttributesPanelConfig.INSTANCE.compact;
-            if (cfg != null && cfg.sidePadding >= 0) return cfg.sidePadding;
+            if (cfg != null) return cfg.sidePadding;
             return DEFAULT_SIDE_PADDING;
         }
 
@@ -1485,14 +1486,16 @@
 
         private void drawStat(DrawContext ctx, TextRenderer tr, int innerX, int y, StatRow statRow) {
             String rawName = statRow.stat.name().getString();
-            NameSplit split = splitLeadingIcon(rawName);
+            String translationKey = Text.translatable(statRow.stat.attribute().value().getTranslationKey()).getString();
+
+            IconLeadingCompat.IconSplit split = IconLeadingCompat.extractIconWithFallback(rawName, translationKey);
 
             final int iconLeft  = innerX;
             final int valueLeft = iconLeft + iconColW() + ICON_VALUE_GAP;
 
             float fs = fontScale();
 
-            if (split.leadingIcon != null) {
+            if (split.hasIcon()) {
                 int glyphW = (int)Math.ceil(tr.getWidth(split.leadingIcon) * fs);
                 int drawXpx = iconLeft + Math.max(0, (iconColW() - glyphW) / 2);
 

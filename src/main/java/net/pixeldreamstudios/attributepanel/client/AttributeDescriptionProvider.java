@@ -10,6 +10,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,14 @@ public class AttributeDescriptionProvider {
         List<Text> lines = new ArrayList<>();
         List<ItemStack> icons = new ArrayList<>();
 
-        lines.add(Text.translatable(attribute.getTranslationKey()).formatted(Formatting.BOLD));
+        Text attrNameText = Text.translatable(attribute.getTranslationKey());
+        IconLeadingCompat.IconSplit split = IconLeadingCompat.extractIcon(attrNameText);
+
+        if (split.hasIcon()) {
+            lines.add(Text.literal(split.leadingIcon + " ").append(Text.literal(split.cleanName)).formatted(Formatting.BOLD));
+        } else {
+            lines.add(attrNameText.copy().formatted(Formatting.BOLD));
+        }
         icons.add(ItemStack.EMPTY);
 
         if (!desc.isEmpty() && !desc.equals(descKey)) {

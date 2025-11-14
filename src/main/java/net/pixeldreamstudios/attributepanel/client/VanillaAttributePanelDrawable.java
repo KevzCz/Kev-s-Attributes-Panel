@@ -9,6 +9,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.sound.SoundEvents;
+import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
+
 @Environment(EnvType.CLIENT)
 class VanillaAttributePanelDrawable {
     private final AttributePanelDrawable root;
@@ -48,7 +50,12 @@ class VanillaAttributePanelDrawable {
             int rowIndex = i - startIndex;
             int yOffset = rowY + rowIndex * rowHeight;
 
-            String statName = stat.name().getString();
+            String rawName = stat.name().getString();
+            String translationKey = Text.translatable(stat.attribute().value().getTranslationKey()).getString();
+
+            IconLeadingCompat.IconSplit split = IconLeadingCompat.extractIconWithFallback(rawName, translationKey);
+            String statName = split.cleanName;
+
             int maxNameWidth = root.panelWidth() / 2 - 8;
 
             String topLine, bottomLine = null;
@@ -68,16 +75,23 @@ class VanillaAttributePanelDrawable {
                 }
             }
 
-            context.drawTexture(NAME_BG,  root.left(),                    yOffset, 0, 0, root.panelWidth() / 2, rowHeight, 16, 16);
-            context.drawTexture(VALUE_BG, root.left() + root.panelWidth() / 2, yOffset, 0, 0, root.panelWidth() / 2, rowHeight, 16, 16);
-
+            int nameX = root.left() + 15;
+            int valueX = root.left() + root.panelWidth() - 12;
             int nameY = yOffset + (rowHeight - 8) / 2;
-            if (bottomLine == null) {
-                context.drawText(tr, topLine, root.left() + 4, nameY, 0xFFFFFF, false);
-            } else {
-                context.drawText(tr, topLine, root.left() + 4, yOffset + 4, 0xFFFFFF, false);
-                context.drawText(tr, bottomLine, root.left() + 4, yOffset + 14, 0xCCCCCC, false);
+
+
+            if (split.hasIcon()) {
+                context.drawText(tr, split.leadingIcon, nameX, nameY, 0x3A2F23, false);
+                nameX += tr.getWidth(split.leadingIcon + " ");
             }
+
+            if (bottomLine == null) {
+                context.drawText(tr, topLine, nameX, nameY, 0x3A2F23, false);
+            } else {
+                context.drawText(tr, topLine, nameX, yOffset + 4, 0x3A2F23, false);
+                context.drawText(tr, bottomLine, nameX, yOffset + 12, 0x6D5C48, false);
+            }
+
 
             String valueStr = stat.percent() ? String.format("%d%%", (int) (stat.current() * 100)) : String.format("%.2f", stat.current());
             int color = stat.isChanged() ? (stat.current() > stat.base() ? Formatting.GREEN.getColorValue() : Formatting.RED.getColorValue()) : Formatting.GRAY.getColorValue();
