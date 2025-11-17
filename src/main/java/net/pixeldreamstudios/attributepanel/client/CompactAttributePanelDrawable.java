@@ -475,7 +475,34 @@
 
                     Text displayName = Text.literal(formatModifierId(modId));
                     ItemStack iconStack = ItemStack.EMPTY;
+                    Identifier texIcon = null;
                     boolean foundSource = false;
+
+
+                    if (rawId.getNamespace().equals("texture")) {
+                        String[] texParts = fullPath.split("\\.");
+                        if (texParts.length >= 4) {
+
+                            String textureNamespace = texParts[0];
+                            StringBuilder texPathBuilder = new StringBuilder("textures");
+
+                            for (int i = 1; i < texParts.length - 1; i++) {
+                                texPathBuilder.append("/").append(texParts[i]);
+                            }
+                            texPathBuilder.append(".png");
+
+                            String customNameFromPath = texParts[texParts.length - 1];
+
+                            texIcon = Identifier.of(textureNamespace, texPathBuilder.toString());
+
+                            String pretty = Arrays.stream(customNameFromPath.split("_"))
+                                    .map(s -> s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1).toLowerCase(Locale.ROOT))
+                                    .collect(Collectors.joining(" "));
+                            displayName = Text.literal(pretty).formatted(Formatting.LIGHT_PURPLE);
+                            usedCustomName = true;
+                            foundSource = true;
+                        }
+                    }
 
                     Text enchDisplayName = null;
                     ItemStack enchIconStack = ItemStack.EMPTY;
@@ -534,7 +561,8 @@
 
                     if (foundSource) {
                         lines.add(displayName.copy().append(" ").append(Text.literal(opText).formatted(color)));
-                        icons.add(iconStack); texIcons.add(null);
+                        icons.add(iconStack);
+                        texIcons.add(texIcon);
                         continue;
                     }
 
