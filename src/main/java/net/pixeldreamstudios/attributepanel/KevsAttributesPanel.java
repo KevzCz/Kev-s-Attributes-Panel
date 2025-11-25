@@ -50,12 +50,43 @@ public class KevsAttributesPanel implements ModInitializer {
 					if (id == null) {
 						continue;
 					}
-					var entry = Registries.ATTRIBUTE.getEntry(id);
-					if (entry.isEmpty()) {
-						continue;
+
+					if (attribute.id.contains("*")) {
+						String regex = attribute.id.replace("*", ".*");
+						for (var entry : Registries.ATTRIBUTE.streamEntries().toList()) {
+							var entryId = entry.getKey().map(key -> key.getValue()).orElse(null);
+							if (entryId != null && entryId.toString().matches(regex)) {
+								entry.value().setTracked(true);
+							}
+						}
+					} else {
+						var entry = Registries.ATTRIBUTE.getEntry(id);
+						if (entry.isEmpty()) {
+							continue;
+						}
+						entry.get().value().setTracked(true);
 					}
-					entry.get().value().setTracked(true);
 				}
+			}
+
+			for (String attrIdStr : config.percentAttributesBase100) {
+				var id = Identifier.tryParse(attrIdStr);
+				if (id == null) continue;
+
+				var entry = Registries.ATTRIBUTE.getEntry(id);
+				if (entry.isEmpty()) continue;
+
+				entry.get().value().setTracked(true);
+			}
+
+			for (String attrIdStr : config.percentAttributes) {
+				var id = Identifier.tryParse(attrIdStr);
+				if (id == null) continue;
+
+				var entry = Registries.ATTRIBUTE.getEntry(id);
+				if (entry.isEmpty()) continue;
+
+				entry.get().value().setTracked(true);
 			}
 		}
 	}

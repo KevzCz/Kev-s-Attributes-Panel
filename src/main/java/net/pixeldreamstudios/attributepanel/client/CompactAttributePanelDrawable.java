@@ -393,16 +393,43 @@
             );
 
             EntityAttributeInstance instance = player.getAttributeInstance(stat.attribute());
+            if (instance == null) return;
 
             List<Text> lines = new ArrayList<>();
             List<ItemStack> icons = new ArrayList<>();
             List<Identifier> texIcons = new ArrayList<>();
 
-            lines.add(Text.translatable("attributepanel.tooltip.base", String.format("%.2f", stat.base())));
-            icons.add(ItemStack.EMPTY); texIcons.add(null);
+            Identifier attrId = Registries.ATTRIBUTE.getId(stat.attribute().value());
+            String idStr = attrId == null ? "" : attrId.toString();
+            boolean isBase100Percent = AttributesPanelConfig.INSTANCE.percentAttributesBase100.contains(idStr);
 
-            if (instance != null) {
-                lines.add(Text.translatable("attributepanel.tooltip.final", String.format("%.2f", instance.getValue())));
+            double rawBase = instance.getBaseValue();
+            double rawFinal = instance.getValue();
+
+            java.util.function.Function<Double, String> fmtPct = (d) -> {
+                if (Math.abs(d - Math.round(d)) < 0.01) {
+                    return String.format("%d%%", (int)Math.round(d));
+                }
+                return String.format("%.2f%%", d);
+            };
+
+            if (isBase100Percent) {
+                if (Math.abs(rawBase) < 0.001) {
+                    lines.add(Text.translatable("attributepanel.tooltip.base", fmtPct.apply(0.0)));
+                    icons.add(ItemStack.EMPTY); texIcons.add(null);
+                    lines.add(Text.translatable("attributepanel.tooltip.final", fmtPct.apply(rawFinal * 100)));
+                    icons.add(ItemStack.EMPTY); texIcons.add(null);
+                } else {
+                    double percentChange = ((rawFinal - rawBase) / rawBase) * 100;
+                    lines.add(Text.translatable("attributepanel.tooltip.base", String.format("%s (%.2f)", fmtPct.apply(0.0), rawBase)));
+                    icons.add(ItemStack.EMPTY); texIcons.add(null);
+                    lines.add(Text.translatable("attributepanel.tooltip.final", String.format("%s (%.2f)", fmtPct.apply(percentChange), rawFinal)));
+                    icons.add(ItemStack.EMPTY); texIcons.add(null);
+                }
+            } else {
+                lines.add(Text.translatable("attributepanel.tooltip.base", String.format("%.2f", rawBase)));
+                icons.add(ItemStack.EMPTY); texIcons.add(null);
+                lines.add(Text.translatable("attributepanel.tooltip.final", String.format("%.2f", rawFinal)));
                 icons.add(ItemStack.EMPTY); texIcons.add(null);
             }
 
@@ -418,7 +445,7 @@
                 unmatchedTrinketSources.addAll(TrinketCompat.getTrinketModifierSources(player));
             }
 
-            if (instance != null && !instance.getModifiers().isEmpty()) {
+            if (!instance.getModifiers().isEmpty()) {
                 lines.add(Text.empty()); icons.add(ItemStack.EMPTY); texIcons.add(null);
                 lines.add(Text.translatable("attributepanel.message.modifiers").formatted(Formatting.YELLOW));
                 icons.add(ItemStack.EMPTY); texIcons.add(null);
@@ -478,11 +505,9 @@
                     Identifier texIcon = null;
                     boolean foundSource = false;
 
-
                     if (rawId.getNamespace().equals("texture")) {
                         String[] texParts = fullPath.split("\\.");
                         if (texParts.length >= 4) {
-
                             String textureNamespace = texParts[0];
                             StringBuilder texPathBuilder = new StringBuilder("textures");
 
@@ -492,7 +517,6 @@
                             texPathBuilder.append(".png");
 
                             String customNameFromPath = texParts[texParts.length - 1];
-
                             texIcon = Identifier.of(textureNamespace, texPathBuilder.toString());
 
                             String pretty = Arrays.stream(customNameFromPath.split("_"))
@@ -557,8 +581,6 @@
                         }
                     }
 
-
-
                     if (foundSource) {
                         lines.add(displayName.copy().append(" ").append(Text.literal(opText).formatted(color)));
                         icons.add(iconStack);
@@ -588,8 +610,8 @@
                             foundSource = true;
                             break SEARCH_EQUIPPED;
                         }
-
                     }
+
                     if (!foundSource && enchantParsed) {
                         Text useName = enchDisplayName != null ? enchDisplayName : displayName;
                         ItemStack useIcon = !enchIconStack.isEmpty() ? enchIconStack : iconStack;
@@ -630,7 +652,6 @@
                                 if (FabricLoader.getInstance().isModLoaded("trinkets")) {
                                     try {
                                         for (var src : net.pixeldreamstudios.attributepanel.compat.TrinketCompat.getTrinketModifierSources(player)) {
-
                                             sourced.add(new net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack(src.stack(), "trinket"));
                                         }
                                     } catch (Exception ignored) {}
@@ -645,7 +666,6 @@
                                         if (setId.getNamespace().equals(rawId.getNamespace())) {
                                             List<ItemStack> setItems = res.items();
                                             if (setItems != null && !setItems.isEmpty()) {
-
                                                 int idx = (int) ((System.currentTimeMillis() / 1000L) % setItems.size());
                                                 ItemStack chosen = setItems.get(idx);
                                                 iconStack = chosen;
@@ -684,7 +704,6 @@
                             }
                         } catch (Exception ignored) {}
                     }
-
 
                     if (customName != null && !customName.isBlank() && !"dungeon_difficulty".equals(rawId.getNamespace()) && !"morequesttypes".equals(rawId.getNamespace())) {
                         Set<String> ignoredArmorNames = Set.of("helmet", "chestplate", "leggings", "boots");
@@ -729,6 +748,7 @@
                             }
                         }
                     }
+
                     if ("dungeon_difficulty".equals(rawId.getNamespace())) {
                         displayName = Text.literal("Power Boost").formatted(Formatting.AQUA);
                         lines.add(displayName.copy().append(" ").append(Text.literal(opText).formatted(color)));
@@ -736,6 +756,7 @@
                         texIcons.add(DD_POWER_ICON);
                         continue;
                     }
+
                     if ("morequesttypes".equals(rawId.getNamespace())) {
                         displayName = Text.literal("Quest Reward").formatted(Formatting.AQUA);
                         lines.add(displayName.copy().append(" ").append(Text.literal(opText).formatted(color)));
@@ -743,8 +764,8 @@
                         texIcons.add(FTB_QUEST_BOOK_ICON);
                         continue;
                     }
-                    boolean printedCustom = false;
 
+                    boolean printedCustom = false;
 
                     if (rawId.getNamespace().equals("rpg-systems")) {
                         String p = rawId.getPath();
@@ -777,8 +798,6 @@
                     }
 
                     if (printedCustom) {
-
-
                         continue;
                     } else if (rawId.getNamespace().equals("tiered")) {
                         String[] pp = rawId.getPath().split("_");
@@ -802,46 +821,112 @@
                 }
             }
 
-            if (stat.isChanged()) {
+            boolean hasChanges = Math.abs(rawFinal - rawBase) > 0.001;
+
+            if (hasChanges) {
                 lines.add(Text.empty()); icons.add(ItemStack.EMPTY); texIcons.add(null);
                 if (shiftDown) {
-                    double base = stat.base();
-                    double basePlusAdd = base + flat;
-                    double afterBaseMult = (multBase!=0.0) ? basePlusAdd * (1.0+multBase) : basePlusAdd;
-                    double finalValue = (multTotal!=0.0) ? afterBaseMult * (1.0+multTotal) : afterBaseMult;
+                    lines.add(Text.translatable("attributepanel.tooltip.calculated").formatted(Formatting.DARK_GRAY));
+                    icons.add(ItemStack.EMPTY); texIcons.add(null);
 
-                    lines.add(Text.translatable("attributepanel.tooltip.calculated").formatted(Formatting.DARK_GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                    if (isBase100Percent) {
 
-                    if (!flatParts.isEmpty()) {
-                        String sum = flatParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
-                        lines.add(Text.literal(String.format("⟶ %.2f + (%s) = %.2f", base, sum, basePlusAdd)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        if (Math.abs(rawBase) < 0.001) {
+
+                            if (!flatParts.isEmpty()) {
+                                String sum = flatParts.stream()
+                                        .map(v -> fmtPct.apply(v * 100))
+                                        .reduce((a,b) -> a + " + " + b)
+                                        .orElse(fmtPct.apply(0.0));
+                                lines.add(Text.literal(String.format("⟶ %s + (%s) = %s",
+                                        fmtPct.apply(0.0), sum, fmtPct.apply(rawFinal * 100))).formatted(Formatting.GRAY));
+                                icons.add(ItemStack.EMPTY); texIcons.add(null);
+                            }
+                            lines.add(Text.literal("= " + fmtPct.apply(rawFinal * 100)).formatted(Formatting.GREEN));
+                            icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        } else {
+
+                            double basePlusAdd = rawBase + flat;
+                            double afterBaseMult = (multBase != 0.0) ? basePlusAdd * (1.0 + multBase) : basePlusAdd;
+                            double finalValue = (multTotal != 0.0) ? afterBaseMult * (1.0 + multTotal) : afterBaseMult;
+
+                            lines.add(Text.literal(String.format("Base: %.2f (%s)", rawBase, fmtPct.apply(0.0))).formatted(Formatting.GRAY));
+                            icons.add(ItemStack.EMPTY); texIcons.add(null);
+
+                            if (!flatParts.isEmpty()) {
+                                String sum = flatParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
+                                double pct = ((basePlusAdd - rawBase) / rawBase) * 100;
+                                lines.add(Text.literal(String.format("⟶ %.2f + (%s) = %.2f (%s)",
+                                        rawBase, sum, basePlusAdd, fmtPct.apply(pct))).formatted(Formatting.GRAY));
+                                icons.add(ItemStack.EMPTY); texIcons.add(null);
+                            }
+
+                            if (!baseMultParts.isEmpty()) {
+                                String sum = baseMultParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
+                                double pct = ((afterBaseMult - rawBase) / rawBase) * 100;
+                                lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %s) = %.2f (%s)",
+                                        basePlusAdd, sum, afterBaseMult, fmtPct.apply(pct))).formatted(Formatting.GRAY));
+                                icons.add(ItemStack.EMPTY); texIcons.add(null);
+                            }
+
+                            if (!totalMultParts.isEmpty()) {
+                                String sum = totalMultParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
+                                double pct = ((finalValue - rawBase) / rawBase) * 100;
+                                lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %s) = %.2f (%s)",
+                                        afterBaseMult, sum, finalValue, fmtPct.apply(pct))).formatted(Formatting.GRAY));
+                                icons.add(ItemStack.EMPTY); texIcons.add(null);
+                            }
+
+                            double finalPct = ((rawFinal - rawBase) / rawBase) * 100;
+                            lines.add(Text.literal(String.format("= %.2f (%s)", rawFinal, fmtPct.apply(finalPct))).formatted(Formatting.GREEN));
+                            icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        }
                     } else {
-                        lines.add(Text.literal(String.format("= %.2f", base)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
-                    }
 
-                    if (!baseMultParts.isEmpty()) {
-                        String sum = baseMultParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
-                        lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %s) = %.2f", basePlusAdd, sum, afterBaseMult)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
-                    }
-                    if (!totalMultParts.isEmpty()) {
-                        String sum = totalMultParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
-                        lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %s) = %.2f", afterBaseMult, sum, finalValue)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
-                    }
+                        double base = rawBase;
+                        double basePlusAdd = base + flat;
+                        double afterBaseMult = (multBase != 0.0) ? basePlusAdd * (1.0 + multBase) : basePlusAdd;
+                        double finalValue = (multTotal != 0.0) ? afterBaseMult * (1.0 + multTotal) : afterBaseMult;
 
-                    lines.add(Text.literal("= " + String.format("%.2f", finalValue)).formatted(Formatting.GREEN)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        if (!flatParts.isEmpty()) {
+                            String sum = flatParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
+                            lines.add(Text.literal(String.format("⟶ %.2f + (%s) = %.2f", base, sum, basePlusAdd)).formatted(Formatting.GRAY));
+                            icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        } else {
+                            lines.add(Text.literal(String.format("= %.2f", base)).formatted(Formatting.GRAY));
+                            icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        }
 
-                    if (instance != null) {
-                        double actual = instance.getValue();
-                        double delta = actual - finalValue;
+                        if (!baseMultParts.isEmpty()) {
+                            String sum = baseMultParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
+                            lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %s) = %.2f", basePlusAdd, sum, afterBaseMult)).formatted(Formatting.GRAY));
+                            icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        }
+
+                        if (!totalMultParts.isEmpty()) {
+                            String sum = totalMultParts.stream().map(v->String.format("%.2f",v)).reduce((a,b)->a+" + "+b).orElse("0.00");
+                            lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %s) = %.2f", afterBaseMult, sum, finalValue)).formatted(Formatting.GRAY));
+                            icons.add(ItemStack.EMPTY); texIcons.add(null);
+                        }
+
+                        lines.add(Text.literal("= " + String.format("%.2f", finalValue)).formatted(Formatting.GREEN));
+                        icons.add(ItemStack.EMPTY); texIcons.add(null);
+
+                        double actualFinal = rawFinal;
+                        double delta = actualFinal - finalValue;
                         if (Math.abs(delta) > 0.001 && finalValue > 0.001) {
-                            double pct = Math.abs(delta)/finalValue;
+                            double pct = Math.abs(delta) / finalValue;
                             lines.add(Text.empty()); icons.add(ItemStack.EMPTY); texIcons.add(null);
                             if (delta > 0) {
-                                lines.add(Text.translatable("attributepanel.tooltip.indirect_bonus", String.format("%.2f", delta)).formatted(Formatting.DARK_GREEN)); icons.add(ItemStack.EMPTY); texIcons.add(null);
-                                lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %.2f) = %.2f", finalValue, pct, actual)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                                lines.add(Text.translatable("attributepanel.tooltip.indirect_bonus", String.format("%.2f", delta)).formatted(Formatting.DARK_GREEN));
+                                icons.add(ItemStack.EMPTY); texIcons.add(null);
+                                lines.add(Text.literal(String.format("⟶ %.2f × (1.00 + %.2f) = %.2f", finalValue, pct, actualFinal)).formatted(Formatting.GRAY));
+                                icons.add(ItemStack.EMPTY); texIcons.add(null);
                             } else {
-                                lines.add(Text.translatable("attributepanel.tooltip.indirect_decrease", String.format("%.2f", -delta)).formatted(Formatting.RED)); icons.add(ItemStack.EMPTY); texIcons.add(null);
-                                lines.add(Text.literal(String.format("⟶ %.2f × (1.00 - %.2f) = %.2f", finalValue, pct, actual)).formatted(Formatting.GRAY)); icons.add(ItemStack.EMPTY); texIcons.add(null);
+                                lines.add(Text.translatable("attributepanel.tooltip.indirect_decrease", String.format("%.2f", -delta)).formatted(Formatting.RED));
+                                icons.add(ItemStack.EMPTY); texIcons.add(null);
+                                lines.add(Text.literal(String.format("⟶ %.2f × (1.00 - %.2f) = %.2f", finalValue, pct, actualFinal)).formatted(Formatting.GRAY));
+                                icons.add(ItemStack.EMPTY); texIcons.add(null);
                             }
                         }
                     }
@@ -853,7 +938,6 @@
 
             root.enqueueTooltipRich(lines, icons, texIcons, mouseX, mouseY);
         }
-
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {

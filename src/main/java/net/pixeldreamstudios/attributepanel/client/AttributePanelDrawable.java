@@ -250,8 +250,13 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
             boolean isPercent = mode != Mode.NONE;
 
             if (mode == Mode.BASE_100) {
-                baseForDisplay  = 0;
-                valueForDisplay = (rawValue - rawBase) / rawBase;
+                if (Math.abs(rawBase) < 0.001) {
+                    baseForDisplay = 0.0;
+                    valueForDisplay = rawValue;
+                } else {
+                    baseForDisplay = 0.0;
+                    valueForDisplay = (rawValue - rawBase) / rawBase;
+                }
             }
 
             if (showOnlyChanged && AttributesPanelConfig.INSTANCE.guiStyle != AttributesPanelConfig.GuiStyle.COMPACT) {
