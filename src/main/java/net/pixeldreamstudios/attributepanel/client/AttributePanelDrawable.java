@@ -218,7 +218,7 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
         PlayerEntity player = client.player;
         if (player == null) return;
 
-        for (RegistryEntry<EntityAttribute> entry : Registries.ATTRIBUTE.streamEntries().toList()) {
+        for (RegistryEntry<EntityAttribute> entry :  Registries.ATTRIBUTE.streamEntries().toList()) {
             EntityAttribute attr = entry.value();
             EntityAttributeInstance instance = player.getAttributeInstance(entry);
             if (instance == null) continue;
@@ -259,8 +259,16 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                 }
             }
 
+            int bonusCount = 0;
+            if (Double.isNaN(rawBase) || Double.isNaN(rawValue)) {
+                if (instance.getModifiers() != null) {
+                    bonusCount = instance.getModifiers().size();
+                }
+            }
+
             if (showOnlyChanged && AttributesPanelConfig.INSTANCE.guiStyle != AttributesPanelConfig.GuiStyle.COMPACT) {
-                if (Double.isNaN(valueForDisplay) || Math.abs(baseForDisplay - valueForDisplay) < 0.001) continue;
+                if (! Double.isNaN(valueForDisplay) && Math.abs(baseForDisplay - valueForDisplay) < 0.001) continue;
+                if (Double.isNaN(valueForDisplay)) continue;
             }
 
             cachedStats.add(new StatEntry(
@@ -268,7 +276,8 @@ public class AttributePanelDrawable implements Drawable, Element, Selectable {
                     baseForDisplay,
                     valueForDisplay,
                     isPercent,
-                    entry
+                    entry,
+                    bonusCount
             ));
         }
         cachedStats.sort((a, b) -> a.name().getString().compareToIgnoreCase(b.name().getString()));

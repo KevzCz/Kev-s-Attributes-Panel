@@ -9,9 +9,18 @@ public record StatEntry(
         double base,
         double current,
         boolean percent,
-        RegistryEntry<EntityAttribute> attribute
+        RegistryEntry<EntityAttribute> attribute,
+        int bonusCount
 ) {
+    public StatEntry(Text name, double base, double current, boolean percent, RegistryEntry<EntityAttribute> attribute) {
+        this(name, base, current, percent, attribute, 0);
+    }
+
     public boolean isChanged() {
         return Math.abs(current - base) > 0.001;
+    }
+
+    public boolean isNaN() {
+        return Double.isNaN(current) || Double.isNaN(base);
     }
 }

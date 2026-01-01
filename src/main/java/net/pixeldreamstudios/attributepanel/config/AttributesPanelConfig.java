@@ -92,6 +92,10 @@ public class AttributesPanelConfig {
         public List<String> globalBlacklist = new ArrayList<>();
 
         public boolean disableOtherHeader = false;
+        public boolean disableBonusesHeader = false;
+        public String bonusesHeaderName = "Bonuses";
+        public String bonusesHeaderIcon = null;
+
         public int sidePadding = 15;
         public float textScale = 0.55f;
 
@@ -134,9 +138,12 @@ public class AttributesPanelConfig {
 
             s.otherHeaderName = "Misc";
             s.otherHeaderIcon = null;
+            s.bonusesHeaderName = "Bonuses";
+            s.bonusesHeaderIcon = null;
             s.globalBlacklist = new ArrayList<>();
 
             s.disableOtherHeader = false;
+            s.disableBonusesHeader = false;
             s.sidePadding = 15;
             s.textScale = 0.55f;
 

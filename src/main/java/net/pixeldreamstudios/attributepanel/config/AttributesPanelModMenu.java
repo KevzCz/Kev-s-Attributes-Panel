@@ -131,7 +131,25 @@ public class AttributesPanelModMenu implements ModMenuApi {
                 .setTooltip(Text.literal("Texture path like modid:textures/gui/other.png; leave blank for none."))
                 .setSaveConsumer(v -> safeSettings().otherHeaderIcon = emptyToNull(trimOrNull(v)))
                 .build());
+        compactSC.add(eb.startStrField(Text.literal("Bonuses header name"),
+                        nullToEmpty(safeSettings().bonusesHeaderName))
+                .setDefaultValue("Bonuses")
+                .setTooltip(Text.literal("Title used for the group that shows NaN attributes with modifiers. "))
+                .setSaveConsumer(v -> safeSettings().bonusesHeaderName = emptyToNull(trimOrNull(v)))
+                .build());
 
+        compactSC.add(eb.startStrField(Text.literal("Bonuses header icon (optional)"),
+                        nullToEmpty(safeSettings().bonusesHeaderIcon))
+                .setTooltip(Text.literal("Texture path like modid:textures/gui/bonuses.png; leave blank for none. "))
+                .setSaveConsumer(v -> safeSettings().bonusesHeaderIcon = emptyToNull(trimOrNull(v)))
+                .build());
+
+        compactSC.add(eb.startBooleanToggle(Text.literal("Hide \"Bonuses\" header"),
+                        safeSettings().disableBonusesHeader)
+                .setDefaultValue(false)
+                .setTooltip(Text.literal("If enabled, NaN attributes with modifiers won't be shown in a separate Bonuses group."))
+                .setSaveConsumer(v -> safeSettings().disableBonusesHeader = v)
+                .build());
         compactSC.add(eb.startStrList(Text.literal("Global blacklist (globs)"),
                         new ArrayList<>(safeSettings().globalBlacklist))
                 .setTooltip(Text.literal("Any matching attributes are hidden entirely."))
