@@ -1,0 +1,46 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+#issueTrackerURL = ""
+license = "MIT"
+
+[[mods]]
+modId = "kevs_attributes_panel"
+version = "${version}"
+displayName = "Kev's Attributes Panel"
+authors = "KevzCz"
+description = '''
+Adds an attribute panel!
+'''
+logoFile = "assets/kevs_attributes_panel/icon.png"
+
+
+[[dependencies.kevs_attributes_panel]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.kevs_attributes_panel]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.kevs_attributes_panel]]
+modId = "architectury"
+type = "required"
+versionRange = "[13.0.8,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.kevs_attributes_panel]]
+modId = "cloth_config"
+type = "optional"
+versionRange = "[*)"
+ordering = "AFTER"
+side = "CLIENT"
+
+[[mixins]]
+config = "kevs_attributes_panel.mixins.json"

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "kevs_attributes_panel",
+  "version": "${version}",
+  "name": "Kev's Attributes Panel",
+  "description": "Adds an attribute panel!",
+  "authors": [
+    "KevzCz",
+    "Pixel Dream Studios"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/kevs-attributes-panel",
+    "sources": "https://github.com/KevzCz/Kev-s-Attributes-Panel",
+    "issues": "https://github.com/KevzCz/Kev-s-Attributes-Panel/issues"
+  },
+  "custom": {
+    "modmenu:api": true
+  },
+  "license": "MIT",
+  "icon": "assets/kevs_attributes_panel/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.pixeldreamstudios.attributepanel.fabric.KevsAttributesPanelFabric"
+    ],
+    "client": [
+      "net.pixeldreamstudios.attributepanel.fabric.client.KevsAttributesPanelFabricClient"
+    ],
+    "modmenu": [
+      "net.pixeldreamstudios.attributepanel.fabric.config.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "kevs_attributes_panel.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.4",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "architectury": ">=13.0.8",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "cloth-config": "*",
+    "modmenu": "*"
+  }
+}
