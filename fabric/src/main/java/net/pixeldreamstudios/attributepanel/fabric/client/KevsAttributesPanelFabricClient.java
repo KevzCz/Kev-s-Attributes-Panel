@@ -8,6 +8,7 @@ public final class KevsAttributesPanelFabricClient implements ClientModInitializ
     @Override
     public void onInitializeClient() {
         AttributeSnapshotCommand.register();
+        AttributeSnapshotCommand.registerAttributeCheck();
         NetworkManagerImpl.registerClientPayloads();
     }
 }

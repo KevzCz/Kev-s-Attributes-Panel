@@ -27,7 +27,7 @@
       "net.pixeldreamstudios.attributepanel.fabric.client.KevsAttributesPanelFabricClient"
     ],
     "modmenu": [
-      "net.pixeldreamstudios.attributepanel.fabric.config.ModMenuIntegration"
+      "net.pixeldreamstudios.attributepanel.config.fabric.ModMenuIntegration"
     ]
   },
   "mixins": [

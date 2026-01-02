@@ -29,9 +29,9 @@ public class NetworkManagerImpl {
                 SendAttributeSnapshotPayload.TYPE,
                 SendAttributeSnapshotPayload.STREAM_CODEC,
                 (payload, context) -> {
-                    context.enqueueWork(() ->
-                            ClientNetworkHandler.handleAttributeSnapshot(payload)
-                    );
+                    context.enqueueWork(() -> {
+                        ClientNetworkHandler.handleAttributeSnapshot(payload);
+                    });
                 }
         );
     }

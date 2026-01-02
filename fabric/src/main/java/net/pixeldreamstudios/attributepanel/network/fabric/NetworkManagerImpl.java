@@ -19,7 +19,11 @@ public class NetworkManagerImpl {
 
         ClientPlayNetworking.registerGlobalReceiver(
                 SendAttributeSnapshotPayload.TYPE,
-                (payload, context) -> ClientNetworkHandler.handleAttributeSnapshot(payload)
+                (payload, context) -> {
+                    context.client().execute(() -> {
+                        ClientNetworkHandler.handleAttributeSnapshot(payload);
+                    });
+                }
         );
     }
 
@@ -31,7 +35,11 @@ public class NetworkManagerImpl {
 
         ServerPlayNetworking.registerGlobalReceiver(
                 RequestAttributeSnapshotPayload.TYPE,
-                (payload, context) -> ServerNetworkHandler.handleAttributeSnapshotRequest(payload, context.player())
+                (payload, context) -> {
+                    context.server().execute(() -> {
+                        ServerNetworkHandler.handleAttributeSnapshotRequest(payload, context.player());
+                    });
+                }
         );
     }
 
