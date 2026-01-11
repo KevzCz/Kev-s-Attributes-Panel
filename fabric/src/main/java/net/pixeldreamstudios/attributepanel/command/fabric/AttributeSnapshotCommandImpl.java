@@ -4,6 +4,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
@@ -21,7 +23,7 @@ import net.pixeldreamstudios.attributepanel.network.NetworkManager;
 import net.pixeldreamstudios.attributepanel.network.payload.RequestAttributeSnapshotPayload;
 
 import java.util.*;
-
+@Environment(EnvType.CLIENT)
 public class AttributeSnapshotCommandImpl {
 
     public static void register() {

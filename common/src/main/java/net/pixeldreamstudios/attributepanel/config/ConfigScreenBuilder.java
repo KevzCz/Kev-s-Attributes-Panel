@@ -1,12 +1,11 @@
-package net.pixeldreamstudios.attributepanel.config;
+package net.pixeldreamstudios. attributepanel.config;
 
 import dev.architectury.injectables.annotations.ExpectPlatform;
-import net.minecraft.client.gui.screens.Screen;
 
 public class ConfigScreenBuilder {
-    
+
     @ExpectPlatform
-    public static Screen buildConfigScreen(Screen parent) {
+    public static Object buildConfigScreen(Object parent) {
         throw new AssertionError();
     }
 }

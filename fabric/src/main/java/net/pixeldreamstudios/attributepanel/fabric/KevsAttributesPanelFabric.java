@@ -20,20 +20,23 @@ public final class KevsAttributesPanelFabric implements ModInitializer {
     }
 
     private void registerBuiltinResourcePacks() {
-        FabricLoader.getInstance().getModContainer(KevsAttributesPanel.MOD_ID).ifPresent(modContainer -> {
+
+        FabricLoader.getInstance().getModContainer("kevs_attributes_panel").ifPresent(modContainer -> {
+
             ResourceManagerHelper.registerBuiltinResourcePack(
-                    ResourceLocation.fromNamespaceAndPath(KevsAttributesPanel.MOD_ID, "kap_minimal_dark"),
+                    ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "kap_minimal_dark"),
                     modContainer,
                     Component.literal("KAP Minimal Dark"),
                     ResourcePackActivationType.NORMAL
             );
 
             ResourceManagerHelper.registerBuiltinResourcePack(
-                    ResourceLocation.fromNamespaceAndPath(KevsAttributesPanel.MOD_ID, "kevs_attributes_panel_old"),
+                    ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "kevs_attributes_panel_old"),
                     modContainer,
                     Component.literal("Old Panel Icons"),
                     ResourcePackActivationType.NORMAL
             );
+
         });
     }
 }
