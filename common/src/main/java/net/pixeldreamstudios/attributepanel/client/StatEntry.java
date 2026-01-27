@@ -10,14 +10,20 @@ public record StatEntry(
         double current,
         boolean percent,
         Holder<Attribute> attribute,
-        int bonusCount
+        int bonusCount,
+        double rawBase,
+        double rawCurrent
 ) {
     public StatEntry(Component name, double base, double current, boolean percent, Holder<Attribute> attribute) {
-        this(name, base, current, percent, attribute, 0);
+        this(name, base, current, percent, attribute, 0, base, current);
+    }
+
+    public StatEntry(Component name, double base, double current, boolean percent, Holder<Attribute> attribute, int bonusCount) {
+        this(name, base, current, percent, attribute, bonusCount, base, current);
     }
 
     public boolean isChanged() {
-        return Math.abs(current - base) > 0.001;
+        return Math.abs(rawCurrent - rawBase) > 0.001;
     }
 
     public boolean isNaN() {

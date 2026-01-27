@@ -13,8 +13,8 @@ import net.pixeldreamstudios.attributepanel.network.fabric.NetworkManagerImpl;
 public final class KevsAttributesPanelFabric implements ModInitializer {
     @Override
     public void onInitialize() {
-        KevsAttributesPanel.init();
         AttributesPanelConfig.load();
+        KevsAttributesPanel.init();
         NetworkManagerImpl.registerServerPayloads();
         registerBuiltinResourcePacks();
     }

@@ -31,7 +31,10 @@ public class AttributesPanelConfig {
                     "spell_power:haste",
                     "ranged_weapon:haste",
                     "spell_engine:damage_taken",
-                    "spell_engine:healing_taken"
+                    "spell_engine:healing_taken",
+                    "spell_engine:evasion_chance",
+                    "critical_strike:damage",
+                    "critical_strike:chance"
             ));
     public List<String> percentKeywords = new ArrayList<>(List.of(
             "chance", "movement_speed"
@@ -123,6 +126,8 @@ public class AttributesPanelConfig {
             offensive.attributes.add(AttributeSpec.of("minecraft:generic.attack_speed",  null));
             offensive.attributes.add(AttributeSpec.of("ranged_weapon:damage",            null));
             offensive.attributes.add(AttributeSpec.of("ranged_weapon:haste",             null));
+            offensive.attributes.add(AttributeSpec.of("critical_strike:chance",             null));
+            offensive.attributes.add(AttributeSpec.of("critical_strike:damage",              null));
             s.headers.add(offensive);
 
             HeaderDef defensive = new HeaderDef();
@@ -133,6 +138,7 @@ public class AttributesPanelConfig {
             defensive.attributes.add(AttributeSpec.of("minecraft:generic.movement_speed",       null));
             defensive.attributes.add(AttributeSpec.of("minecraft:generic.luck",                 null));
             defensive.attributes.add(AttributeSpec.of("minecraft:generic.knockback_resistance", null));
+            defensive.attributes.add(AttributeSpec.of("spell_engine:evasion_chance",         null));
             s.headers.add(defensive);
 
             HeaderDef magic = new HeaderDef();

@@ -18,8 +18,9 @@ import net.pixeldreamstudios.attributepanel.network.neoforge.NetworkManagerImpl;
 public final class KevsAttributesPanelNeoforge {
 
     public KevsAttributesPanelNeoforge(IEventBus modBus, ModContainer modContainer) {
-        KevsAttributesPanel.init();
+        
         AttributesPanelConfig.load();
+        KevsAttributesPanel.init();
         modBus.addListener(this::registerPayloads);
         modBus.addListener(this::addPackFinders);
     }

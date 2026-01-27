@@ -32,39 +32,53 @@ public final class KevsAttributesPanel {
                         for (var entry : BuiltInRegistries.ATTRIBUTE.holders().toList()) {
                             var entryId = entry.unwrapKey().map(key -> key.location()).orElse(null);
                             if (entryId != null && entryId.toString().matches(regex)) {
-                                entry.value().setSyncable(true);
+                                try {
+                                    entry.value().setSyncable(true);
+                                } catch (Exception e) {
+                                    LOGGER.warn("Failed to set syncable for attribute: " + entryId, e);
+                                }
                             }
                         }
                     } else {
                         var id = ResourceLocation.tryParse(attribute.id);
-                        if (id == null) {
-                            continue;
-                        }
-                        var attr = BuiltInRegistries.ATTRIBUTE.get(id);
-                        if (attr != null) {
-                            attr.setSyncable(true);
+                        if (id == null) continue;
+
+                        var entry = BuiltInRegistries.ATTRIBUTE.getHolder(id);
+                        if (entry.isPresent()) {
+                            try {
+                                entry.get().value().setSyncable(true);
+                            } catch (Exception e) {
+                                LOGGER.warn("Failed to set syncable for attribute: " + id, e);
+                            }
                         }
                     }
                 }
             }
-
             for (String attrIdStr : config.percentAttributesBase100) {
                 var id = ResourceLocation.tryParse(attrIdStr);
                 if (id == null) continue;
 
-                var attr = BuiltInRegistries.ATTRIBUTE.get(id);
-                if (attr != null) {
-                    attr.setSyncable(true);
+                var entry = BuiltInRegistries.ATTRIBUTE.getHolder(id);
+                if (entry.isPresent()) {
+                    try {
+                        entry.get().value().setSyncable(true);
+                    } catch (Exception e) {
+                        LOGGER.warn("Failed to set syncable for attribute: " + id, e);
+                    }
                 }
             }
 
-            for (String attrIdStr :  config.percentAttributes) {
+            for (String attrIdStr : config.percentAttributes) {
                 var id = ResourceLocation.tryParse(attrIdStr);
                 if (id == null) continue;
 
-                var attr = BuiltInRegistries.ATTRIBUTE.get(id);
-                if (attr != null) {
-                    attr.setSyncable(true);
+                var entry = BuiltInRegistries.ATTRIBUTE.getHolder(id);
+                if (entry.isPresent()) {
+                    try {
+                        entry.get().value().setSyncable(true);
+                    } catch (Exception e) {
+                        LOGGER.warn("Failed to set syncable for attribute: " + id, e);
+                    }
                 }
             }
         }
