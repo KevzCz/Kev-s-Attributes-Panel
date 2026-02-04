@@ -450,7 +450,86 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         var tip = AttributeDescriptionProvider.getTooltip(stat.attribute().value());
         root.enqueueTooltip(tip.lines(), tip.icons(), mouseX, mouseY);
     }
+    private ItemStack findItemWithEquipmentBonus(AttributeModifier mod, Holder<Attribute> attr) {
+        Player player = root.mc().player;
+        if (player == null) return ItemStack.EMPTY;
 
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            ItemStack stack = player.getItemBySlot(slot);
+            if (stack.isEmpty()) continue;
+
+            if (matchesEquipmentBonus(stack, mod, attr)) {
+                return stack;
+            }
+        }
+
+        if (TrinketsCompat.isLoaded()) {
+            for (var source : TrinketsCompat.getTrinketModifierSources(player)) {
+                if (source.attribute().equals(attr) &&
+                        source.modifier().operation() == mod.operation() &&
+                        Math.abs(source.modifier().amount() - mod.amount()) < 0.0001) {
+                    return source.stack();
+                }
+
+
+                if (matchesModifierToItem(source.stack(), mod)) {
+                    return source.stack();
+                }
+            }
+        }
+
+        if (CuriosCompat.isLoaded()) {
+            for (var source : CuriosCompat.getCurioModifierSources(player)) {
+
+                if (source.attribute().equals(attr) &&
+                        source.modifier().operation() == mod.operation() &&
+                        Math.abs(source.modifier().amount() - mod.amount()) < 0.0001) {
+                    return source.stack();
+                }
+
+                if (matchesModifierToItem(source.stack(), mod)) {
+                    return source.stack();
+                }
+            }
+        }
+
+        return ItemStack.EMPTY;
+    }
+
+    private boolean matchesModifierToItem(ItemStack stack, AttributeModifier mod) {
+        ResourceLocation modId = mod.id();
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+
+        if (itemId == null) return false;
+
+        if (modId.equals(itemId)) return true;
+
+        String modPath = modId.toString();
+        String itemPath = itemId.toString();
+        return modPath.startsWith(itemPath);
+    }
+
+    private boolean matchesEquipmentBonus(ItemStack stack, AttributeModifier mod, Holder<Attribute> attr) {
+        if (matchesModifierToItem(stack, mod)) {
+            return true;
+        }
+
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            final boolean[] found = {false};
+
+            stack.forEachModifier(slot, (attrHolder, attrMod) -> {
+                if (attrHolder.equals(attr) &&
+                        attrMod.operation() == mod.operation() &&
+                        Math.abs(attrMod.amount() - mod.amount()) < 0.0001) {
+                    found[0] = true;
+                }
+            });
+
+            if (found[0]) return true;
+        }
+
+        return false;
+    }
     private void showCalculationTooltip(StatEntry stat, int mouseX, int mouseY) {
         var client = root.mc();
         var player = client.player;
@@ -728,6 +807,19 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                     }
                 }
 
+                if (!foundSource) {
+                    ItemStack equipBonusStack = findItemWithEquipmentBonus(mod, stat.attribute());
+                    if (!equipBonusStack.isEmpty()) {
+                        iconStack = equipBonusStack;
+                        try {
+                            displayName = equipBonusStack.getHoverName().copy().withStyle(equipBonusStack.getRarity().color());
+                        } catch (Exception e) {
+                            displayName = Component.literal(formatModifierId(modId)).withStyle(ChatFormatting.GRAY);
+                        }
+                        foundSource = true;
+                    }
+                }
+
                 if (!foundSource && enchantParsed) {
                     Component useName = enchDisplayName != null ? enchDisplayName : displayName;
                     ItemStack useIcon = !enchIconStack.isEmpty() ? enchIconStack : iconStack;
@@ -740,14 +832,38 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                 }
 
                 if (!foundSource && !"dungeon_difficulty".equals(rawId.getNamespace()) && !"morequesttypes".equals(rawId.getNamespace())) {
-                    String[] pathParts = rawId.getPath().split("\\.", 2)[0].split("/");
-                    if (pathParts.length > 0) {
-                        ResourceLocation guess = ResourceLocation.fromNamespaceAndPath(rawId.getNamespace(), pathParts[pathParts.length - 1]);
-                        if (BuiltInRegistries.ITEM.containsKey(guess)) {
-                            net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(guess);
-                            iconStack = new ItemStack(item);
-                            displayName = iconStack.getHoverName().copy().withStyle(iconStack.getRarity().color());
-                            foundSource = true;
+                    if (BuiltInRegistries.ITEM.containsKey(modId)) {
+                        net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(modId);
+                        iconStack = new ItemStack(item);
+                        displayName = iconStack.getHoverName().copy().withStyle(iconStack.getRarity().color());
+                        foundSource = true;
+                    }
+
+                    if (!foundSource) {
+                        String[] pathParts = rawId.getPath().split("\\.", 2)[0].split("/");
+                        if (pathParts.length > 0) {
+                            ResourceLocation guess = ResourceLocation.fromNamespaceAndPath(rawId.getNamespace(), pathParts[pathParts.length - 1]);
+                            if (BuiltInRegistries.ITEM.containsKey(guess)) {
+                                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(guess);
+                                iconStack = new ItemStack(item);
+                                displayName = iconStack.getHoverName().copy().withStyle(iconStack.getRarity().color());
+                                foundSource = true;
+                            }
+                        }
+                    }
+
+                    if (!foundSource) {
+                        for (EquipmentSlot slot : EquipmentSlot.values()) {
+                            ItemStack stack = player.getItemBySlot(slot);
+                            if (stack.isEmpty()) continue;
+
+                            ResourceLocation stackId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+                            if (stackId != null && stackId.equals(modId)) {
+                                iconStack = stack;
+                                displayName = stack.getHoverName().copy().withStyle(stack.getRarity().color());
+                                foundSource = true;
+                                break;
+                            }
                         }
                     }
                 }
