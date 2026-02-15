@@ -31,6 +31,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
+import net.pixeldreamstudios.attributepanel.compat.AccessoriesCompat;
 import net.pixeldreamstudios.attributepanel.compat.CuriosCompat;
 import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
 import net.pixeldreamstudios.attributepanel.compat.TrinketsCompat;
@@ -463,37 +464,82 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             }
         }
 
-        if (TrinketsCompat.isLoaded()) {
-            for (var source : TrinketsCompat.getTrinketModifierSources(player)) {
-                if (source.attribute().equals(attr) &&
+        if (AccessoriesCompat.isLoaded()) {
+            for (var source : AccessoriesCompat.getAccessoryModifierSources(player)) {
+                if (source.modifier().id().equals(mod.id()) &&
+                        source.attribute().equals(attr) &&
                         source.modifier().operation() == mod.operation() &&
                         Math.abs(source.modifier().amount() - mod.amount()) < 0.0001) {
                     return source.stack();
                 }
+            }
 
+            for (ItemStack stack : AccessoriesCompat.getAllEquippedAccessories(player)) {
+                if (stackProvidesModifier(stack, mod, attr)) {
+                    return stack;
+                }
+            }
+        }
 
-                if (matchesModifierToItem(source.stack(), mod)) {
+        if (TrinketsCompat.isLoaded()) {
+            for (var source : TrinketsCompat.getTrinketModifierSources(player)) {
+                if (source.modifier().id().equals(mod.id()) &&
+                        source.attribute().equals(attr) &&
+                        source.modifier().operation() == mod.operation() &&
+                        Math.abs(source.modifier().amount() - mod.amount()) < 0.0001) {
                     return source.stack();
+                }
+            }
+
+            for (ItemStack stack : TrinketsCompat.getAllEquippedTrinkets(player)) {
+                if (stackProvidesModifier(stack, mod, attr)) {
+                    return stack;
                 }
             }
         }
 
         if (CuriosCompat.isLoaded()) {
             for (var source : CuriosCompat.getCurioModifierSources(player)) {
-
-                if (source.attribute().equals(attr) &&
+                if (source.modifier().id().equals(mod.id()) &&
+                        source.attribute().equals(attr) &&
                         source.modifier().operation() == mod.operation() &&
                         Math.abs(source.modifier().amount() - mod.amount()) < 0.0001) {
                     return source.stack();
                 }
+            }
 
-                if (matchesModifierToItem(source.stack(), mod)) {
-                    return source.stack();
+            for (ItemStack stack : CuriosCompat.getAllEquippedCurios(player)) {
+                if (stackProvidesModifier(stack, mod, attr)) {
+                    return stack;
                 }
             }
         }
 
         return ItemStack.EMPTY;
+    }
+
+    private boolean stackProvidesModifier(ItemStack stack, AttributeModifier mod, Holder<Attribute> attr) {
+        var component = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
+        if (component != null) {
+            for (var entry : component.modifiers()) {
+                if (entry.attribute().equals(attr) &&
+                        entry.modifier().operation() == mod.operation() &&
+                        Math.abs(entry.modifier().amount() - mod.amount()) < 0.0001) {
+                    return true;
+                }
+            }
+        }
+
+        var defaultMods = stack.getItem().getDefaultAttributeModifiers();
+        for (var entry : defaultMods.modifiers()) {
+            if (entry.attribute().equals(attr) &&
+                    entry.modifier().operation() == mod.operation() &&
+                    Math.abs(entry.modifier().amount() - mod.amount()) < 0.0001) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private boolean matchesModifierToItem(ItemStack stack, AttributeModifier mod) {
@@ -599,6 +645,9 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         List<Double> totalMultParts = new ArrayList<>();
 
         var unmatchedAccessorySources = new ArrayList<Object>();
+        if (AccessoriesCompat.isLoaded()) {
+            unmatchedAccessorySources.addAll(AccessoriesCompat.getAccessoryModifierSources(player));
+        }
         if (TrinketsCompat.isLoaded()) {
             unmatchedAccessorySources.addAll(TrinketsCompat.getTrinketModifierSources(player));
         }
@@ -964,7 +1013,11 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                         AttributeModifier sourceMod = null;
                         Holder<Attribute> sourceAttr = null;
 
-                        if (source instanceof TrinketsCompat.TrinketModifierSource trinket) {
+                        if (source instanceof AccessoriesCompat.AccessoryModifierSource accessory) {
+                            sourceStack = accessory.stack();
+                            sourceMod = accessory.modifier();
+                            sourceAttr = accessory.attribute();
+                        } else if (source instanceof TrinketsCompat.TrinketModifierSource trinket) {
                             sourceStack = trinket.stack();
                             sourceMod = trinket.modifier();
                             sourceAttr = trinket.attribute();
@@ -974,9 +1027,12 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                             sourceAttr = curio.attribute();
                         }
 
-                        if (sourceAttr != null && sourceAttr.value().equals(stat.attribute().value())
-                                && sourceMod != null && sourceMod.operation() == mod.operation()
-                                && Math.abs(sourceMod.amount() - mod.amount()) < 0.0001) {
+                        if (sourceMod != null && sourceAttr != null &&
+                                sourceMod.id().equals(mod.id()) &&
+                                sourceAttr.equals(stat.attribute()) &&
+                                sourceMod.operation() == mod.operation() &&
+                                Math.abs(sourceMod.amount() - mod.amount()) < 0.0001) {
+
                             iconStack = sourceStack;
                             try {
                                 displayName = iconStack.getHoverName().copy().withStyle(iconStack.getRarity().color());

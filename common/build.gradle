@@ -15,6 +15,6 @@ dependencies {
 
     modCompileOnly "curse.maven:trinkets-341284:5534317"
     modCompileOnly "curse.maven:curios-309927:6538281"
-
+    modCompileOnly "curse.maven:accessories-938917:7583323"
     modCompileOnly "curse.maven:spell-engine-807653:7396348"
 }

@@ -40,7 +40,7 @@ dependencies {
     modCompileOnly("dev.onyxstudios.cardinal-components-api:cardinal-components-entity:6.1.2")
 
     modCompileOnly "curse.maven:trinkets-341284:5534317"
-
+    modCompileOnly "curse.maven:accessories-938917:7583323"
     modCompileOnly("me.shedaniel.cloth:cloth-config-fabric:15.0.140")
     modCompileOnly("com.terraformersmc:modmenu:11.0.3")
 

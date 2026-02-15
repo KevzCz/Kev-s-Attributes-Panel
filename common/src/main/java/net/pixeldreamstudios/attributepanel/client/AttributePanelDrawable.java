@@ -232,9 +232,6 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
 
             double rawBase = instance.getBaseValue();
             double rawValue = instance.getValue();
-            if (idStr.equals("spell_engine:evasion_chance")) {
-                System.out.println("EVASION DEBUG - Base: " + rawBase + ", Value: " + rawValue + ", Modifiers: " + instance.getModifiers().size());
-            }
             enum Mode { NONE, FRACTION_0_TO_1, BASE_100 }
             Mode mode = Mode.NONE;
 

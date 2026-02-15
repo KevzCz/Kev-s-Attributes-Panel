@@ -44,7 +44,7 @@ dependencies {
 
     modCompileOnly "curse.maven:spell-engine-807653:7396347"
     modCompileOnly "curse.maven:cloth-config-348521:5729127"
-
+    modCompileOnly "curse.maven:accessories-938917:7583320"
     modCompileOnly "curse.maven:icon-leading-tooltip-1335640:7395668"
 }
 
