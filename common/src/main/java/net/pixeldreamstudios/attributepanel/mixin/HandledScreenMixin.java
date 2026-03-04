@@ -1,25 +1,22 @@
 package net.pixeldreamstudios.attributepanel.mixin;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.InventoryMenu;
-import net.pixeldreamstudios.attributepanel.client.AttributePanelDrawable;
-import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
-import org.joml.Quaternionf;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import com.mojang.blaze3d.vertex.*;
+import net.fabricmc.api.*;
+import net.minecraft.client.gui.*;
+import net.minecraft.client.gui.screens.*;
+import net.minecraft.client.gui.screens.inventory.*;
+import net.minecraft.network.chat.*;
+import net.minecraft.resources.*;
+import net.minecraft.world.inventory.*;
+import net.pixeldreamstudios.attributepanel.accessor.*;
+import net.pixeldreamstudios.attributepanel.client.*;
+import net.pixeldreamstudios.attributepanel.config.*;
+import org.joml.*;
+import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.callback.*;
+
+import java.lang.Math;
 @Environment(EnvType.CLIENT)
 @Mixin(AbstractContainerScreen.class)
 public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extends Screen implements AttributePanelAccessor {
