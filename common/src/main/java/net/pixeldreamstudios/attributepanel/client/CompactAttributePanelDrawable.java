@@ -134,13 +134,29 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         return searchText != null && !searchText.isBlank();
     }
 
-    private static String fmtValue(StatEntry stat, boolean inBonusesGroup) {
+    private String fmtValue(StatEntry stat, boolean inBonusesGroup) {
         if (stat.isNaN()) {
             return inBonusesGroup ? "" : (stat.bonusCount() + " bonuses");
         }
 
-        double v = stat.percent() ?  stat.current() * 100.0 : stat.current();
+        double v = stat.current();
+        double originalValue = v;
+        
+        if (AttributesPanelConfig.INSTANCE.enableSmoothValueTransition) {
+            v = root.getAnimationState().getDisplayValue(stat.attribute(), v);
+        }
+        
+        if (stat.percent()) {
+            v = v * 100.0;
+            originalValue = originalValue * 100.0;
+        }
+        
         if (Math.abs(v) < 1e-9) v = 0;
+        
+        if (AttributesPanelConfig.INSTANCE.enableSmoothValueTransition && originalValue == Math.floor(originalValue)) {
+            v = Math.round(v);
+        }
+        
         String s = NUM_FMT.get().format(v);
         return stat.percent() ? s + "%" : s;
     }
@@ -392,6 +408,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
         float fs = fontScale();
         int iconW = iconColW();
+
+        root.getAnimationState().stopGlow(row.stat.attribute());
 
         if (row.inBonusesGroup) {
             String bonusText = split.cleanName + " (" + row.stat.bonusCount() + " bonus" +
@@ -852,7 +870,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                         } catch (Exception ignored) {
                         }
                         foundSource = true;
-                        break SEARCH_EQUIPPED;
+                        break;
                     }
                 }
 
@@ -1373,8 +1391,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         if (mouseX >= searchX && mouseX <= searchX + SEARCH_ICON_SIZE &&
                 mouseY >= iconsY && mouseY <= iconsY + SEARCH_ICON_SIZE) {
             searchVisible = !searchVisible;
-            if (searchVisible) setFocused(true);
-            else setFocused(false);
+            setFocused(searchVisible);
             return true;
         }
 
@@ -1536,11 +1553,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             return true;
         }
 
-        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-            return true;
-        }
-
-        return false;
+        return keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER;
     }
 
     private int caret = 0;
@@ -2120,6 +2133,9 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         final int iconLeft = innerX;
         float fs = fontScale();
 
+        float glowIntensity = root.getAnimationState().getGlowIntensity(statRow.stat.attribute());
+        boolean hasGlow = glowIntensity > 0.01f && AttributesPanelConfig.INSTANCE.enableGlowEffects;
+
         if (statRow.inBonusesGroup) {
             int glyphW = (int) Math.ceil(font.width(split.leadingIcon) * fs);
             int drawXpx = iconLeft + Math.max(0, (iconColW() - glyphW) / 2);
@@ -2133,7 +2149,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                 ctx.pose().popPose();
             } else if (statRow.icon != null) {
                 float s = fs * (ATTR_ICON_SIZE / (float) TEX_ICON_SRC_PX);
-                int iconDrawW = (int) Math.round(ATTR_ICON_SIZE * fs);
+                int iconDrawW = Math.round(ATTR_ICON_SIZE * fs);
                 int drawXpx2 = iconLeft + Math.max(0, (iconColW() - iconDrawW) / 2);
 
                 ctx.pose().pushPose();
@@ -2175,7 +2191,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
             } else if (statRow.icon != null) {
                 float s = fs * (ATTR_ICON_SIZE / (float) TEX_ICON_SRC_PX);
-                int iconDrawW = (int) Math.round(ATTR_ICON_SIZE * fs);
+                int iconDrawW = Math.round(ATTR_ICON_SIZE * fs);
                 int drawXpx = iconLeft + Math.max(0, (iconColW() - iconDrawW) / 2);
 
                 ctx.pose().pushPose();
@@ -2193,16 +2209,29 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
             String valueStr = fmtValue(statRow.stat, statRow.inBonusesGroup);
 
+            int valueColor = ValueColorHelper.getValueColor(statRow.stat);
+            valueColor = ValueColorHelper.applyLightTheme(valueColor, isLightTextTheme());
+
             int valueW = (int) Math.ceil(font.width(valueStr) * fs);
             int spaceW = (int) Math.ceil(font.width(" ") * fs);
             int nameLeft = valueLeft + valueW + spaceW;
+
+            if (hasGlow) {
+                int glowPaddingX = 2;
+                int glowPaddingY = 1;
+                int rowH = (int) Math.ceil(font.lineHeight * fs);
+                int glowAlpha = (int) (glowIntensity * 60);
+                int glowColor = 0xFFFFFF | (glowAlpha << 24);
+                ctx.fill(valueLeft - glowPaddingX, y - glowPaddingY, 
+                         valueLeft + valueW + glowPaddingX, y + rowH + glowPaddingY, glowColor);
+            }
 
             ctx.pose().pushPose();
             ctx.pose().scale(fs, fs, 1f);
 
             int vDrawX = (int) (valueLeft / fs);
             int drawY = (int) (y / fs);
-            ctx.drawString(font, valueStr, vDrawX, drawY, colorBody(), true);
+            ctx.drawString(font, valueStr, vDrawX, drawY, valueColor, true);
 
             int nDrawX = (int) (nameLeft / fs);
             ctx.drawString(font, split.cleanName, nDrawX, drawY, colorBody(), true);
@@ -2366,7 +2395,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         int track = Math.max(1, g.h - g.knobH);
         int clampedTop = Math.max(0, Math.min(desiredKnobTop, track));
         float ratio = clampedTop / (float) track;
-        return (int) Math.round(ratio * g.maxOffsetPx);
+        return Math.round(ratio * g.maxOffsetPx);
     }
 
     private static final class BarGeom {

@@ -73,6 +73,9 @@
   "description.attribute.name.spell_engine.damage_taken": "Modifies how much damage is taken.",
   "description.attribute.name.spell_engine.healing_taken": "Modifies how much healing is received.",
 
+  "description.attribute.name.critical_strike.chance": "Increases your chance to land a critical strike on enemies.",
+  "description.attribute.name.critical_strike.damage": "Multiplies your critical hit damage by this factor.",
+
   "description.attribute.name.generic.armor": "Reduces incoming physical damage.",
   "description.attribute.name.generic.armor_toughness": "Improves armor effectiveness against strong attacks.",
   "description.attribute.name.generic.attack_damage": "Amount of melee damage dealt per attack.",
@@ -113,5 +116,8 @@
 
   "description.attribute.name.combat_roll.count": "Number of combat rolls available.",
   "description.attribute.name.combat_roll.recharge": "Recharge speed of combat rolls.",
-  "description.attribute.name.combat_roll.distance": "How far a combat roll pushes you."
+  "description.attribute.name.combat_roll.distance": "How far a combat roll pushes you.",
+
+  "key.categories.kevs_attributes_panel": "Kev's Attributes Panel",
+  "key.kevs_attributes_panel.quick_open": "Quick Open Inventory with Panel"
 }

@@ -55,6 +55,9 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
     private final BookAttributePanelDrawable bookGui;
     private final VanillaAttributePanelDrawable vanillaGui;
     private final CompactAttributePanelDrawable compactGui;
+    
+    protected final AttributeAnimationState animationState = new AttributeAnimationState();
+    private final Map<ResourceLocation, Double> lastKnownValues = new HashMap<>();
 
     public AttributePanelDrawable(int x, int y, int width) {
         this.x = x;
@@ -72,11 +75,18 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
     public void toggle() {
         expanded = !expanded;
         currentPage = 0;
-        if (expanded) cacheStats();
+        if (expanded) {
+            cacheStats();
+        } else {
+            animationState.reset();
+        }
     }
 
     public void tick() {
-        if (expanded) cacheStats();
+        if (expanded) {
+            cacheStats();
+            animationState.tick();
+        }
     }
 
     public boolean isExpanded() {
@@ -271,6 +281,14 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             if (showOnlyChanged && AttributesPanelConfig.INSTANCE.guiStyle != AttributesPanelConfig.GuiStyle.COMPACT) {
                 if (! Double.isNaN(valueForDisplay) && Math.abs(baseForDisplay - valueForDisplay) < 0.001) continue;
                 if (Double.isNaN(valueForDisplay)) continue;
+            }
+
+            if (attrId != null && AttributesPanelConfig.INSTANCE.enableSmoothValueTransition) {
+                Double lastValue = lastKnownValues.get(attrId);
+                if (lastValue != null && Math.abs(lastValue - rawValue) > 0.001) {
+                    animationState.updateValue(entry, lastValue, rawValue);
+                }
+                lastKnownValues.put(attrId, rawValue);
             }
 
             cachedStats.add(new StatEntry(
@@ -789,6 +807,8 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
     public void setShowOnlyChanged(boolean v) { showOnlyChanged = v; }
 
     public List<StatEntry> getCachedStats() { return cachedStats; }
+    
+    public AttributeAnimationState getAnimationState() { return animationState; }
 
     @Override public void setFocused(boolean focused) {}
     @Override public boolean isFocused() { return false; }

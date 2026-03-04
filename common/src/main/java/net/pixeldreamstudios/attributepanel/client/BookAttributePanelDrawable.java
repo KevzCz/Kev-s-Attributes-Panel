@@ -475,7 +475,7 @@ class BookAttributePanelDrawable {
                         } catch (Exception ignored) {
                         }
                         foundSource = true;
-                        break SEARCH_EQUIPPED;
+                        break;
                     }
                 }
 

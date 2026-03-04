@@ -22,6 +22,25 @@ public class AttributesPanelConfig {
 
     public boolean hoverIconAnimation = true;
 
+    public boolean enableColorCodedValues = false;
+    public boolean enableGlowEffects = false;
+    public boolean enableSmoothValueTransition = false;
+    public int valueTransitionDurationMs = 300;
+
+    public List<String> positiveWhenHigher = new ArrayList<>(List.of(
+            "minecraft:generic.attack_damage",
+            "minecraft:generic.attack_speed",
+            "minecraft:generic.armor",
+            "minecraft:generic.armor_toughness",
+            "minecraft:generic.max_health",
+            "minecraft:generic.movement_speed",
+            "minecraft:generic.luck"
+    ));
+
+    public List<String> positiveWhenLower = new ArrayList<>(List.of(
+            "spell_engine:damage_taken"
+    ));
+
     public List<String> percentAttributes =
             new ArrayList<>(List.of("kevslibrary:armor_penetration"));
     public List<String> percentAttributesBase100 =
@@ -34,12 +53,24 @@ public class AttributesPanelConfig {
                     "spell_engine:healing_taken",
                     "spell_engine:evasion_chance",
                     "critical_strike:damage",
-                    "critical_strike:chance"
+                    "critical_strike:chance",
+                    "kevslibrary:armor_penetration",
+                    "kevslibrary:pet_inheritance_ratio",
+                    "spell_power:generic",
+                    "kevslibrary:arcane_rupture_damage",
+                    "kevslibrary:cleave_damage_multiplier",
+                    "kevslibrary:multistrike_damage",
+                    "kevslibrary:soul_link_damage",
+                    "kevslibrary:trident_damage_multiplier",
+                    "kevslibrary:damage",
+                    "kevslibrary:thorns_amp"
             ));
     public List<String> percentKeywords = new ArrayList<>(List.of(
             "chance", "movement_speed"
     ));
-    public List<String> percentBase100Keywords = new ArrayList<>();
+    public List<String> percentBase100Keywords = new ArrayList<>(List.of(
+            "overload_chance", "chance"
+    ));
     public boolean forceTrackVisibleAttributes = true;
     public CompactSettings compact = CompactSettings.defaultPreset();
 
@@ -55,6 +86,20 @@ public class AttributesPanelConfig {
                 }
                 if (INSTANCE.compact == null) {
                     INSTANCE.compact = CompactSettings.defaultPreset();
+                }
+                if (INSTANCE.positiveWhenHigher == null) {
+                    INSTANCE.positiveWhenHigher = new ArrayList<>(List.of(
+                            "minecraft:generic.attack_damage",
+                            "minecraft:generic.attack_speed",
+                            "minecraft:generic.armor",
+                            "minecraft:generic.armor_toughness",
+                            "minecraft:generic.max_health",
+                            "minecraft:generic.movement_speed",
+                            "minecraft:generic.luck"
+                    ));
+                }
+                if (INSTANCE.positiveWhenLower == null) {
+                    INSTANCE.positiveWhenLower = new ArrayList<>(List.of("spell_engine:damage_taken"));
                 }
                 return;
             } catch (Exception e) {

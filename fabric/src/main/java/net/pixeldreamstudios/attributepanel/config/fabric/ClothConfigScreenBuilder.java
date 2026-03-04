@@ -79,6 +79,48 @@ public class ClothConfigScreenBuilder {
                 .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.hoverIconAnimation = v)
                 .build());
 
+        cat.addEntry(eb.startBooleanToggle(Component.literal("Enable color-coded values"),
+                        AttributesPanelConfig.INSTANCE.enableColorCodedValues)
+                .setDefaultValue(false)
+                .setTooltip(Component.literal("When enabled, attribute values change color based on whether they increase or decrease."))
+                .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.enableColorCodedValues = v)
+                .build());
+
+        cat.addEntry(eb.startBooleanToggle(Component.literal("Enable glow effects"),
+                        AttributesPanelConfig.INSTANCE.enableGlowEffects)
+                .setDefaultValue(false)
+                .setTooltip(Component.literal("When enabled, values briefly glow when they change."))
+                .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.enableGlowEffects = v)
+                .build());
+
+        cat.addEntry(eb.startBooleanToggle(Component.literal("Enable smooth value transitions"),
+                        AttributesPanelConfig.INSTANCE.enableSmoothValueTransition)
+                .setDefaultValue(false)
+                .setTooltip(Component.literal("When enabled, values animate with a rolling slot machine effect when they change."))
+                .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.enableSmoothValueTransition = v)
+                .build());
+
+        cat.addEntry(eb.startIntField(Component.literal("Value transition duration (ms)"),
+                        AttributesPanelConfig.INSTANCE.valueTransitionDurationMs)
+                .setDefaultValue(300)
+                .setTooltip(Component.literal("Duration in milliseconds for value animations."))
+                .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.valueTransitionDurationMs = Math.max(50, v))
+                .build());
+
+        cat.addEntry(eb.startStrList(
+                        Component.literal("Positive when higher (color coding)"),
+                        new ArrayList<>(AttributesPanelConfig.INSTANCE.positiveWhenHigher))
+                .setTooltip(Component.literal("Attribute IDs that show green when increased, red when decreased.\nExample: minecraft:generic.attack_damage"))
+                .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.positiveWhenHigher = list)
+                .build());
+
+        cat.addEntry(eb.startStrList(
+                        Component.literal("Positive when lower (color coding)"),
+                        new ArrayList<>(AttributesPanelConfig.INSTANCE.positiveWhenLower))
+                .setTooltip(Component.literal("Attribute IDs that show green when decreased, red when increased.\nExample: minecraft:generic.gravity"))
+                .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.positiveWhenLower = list)
+                .build());
+
         cat.addEntry(eb.startStrList(
                         Component.literal("Percent attributes (0..1)"),
                         new ArrayList<>(AttributesPanelConfig.INSTANCE.percentAttributes))

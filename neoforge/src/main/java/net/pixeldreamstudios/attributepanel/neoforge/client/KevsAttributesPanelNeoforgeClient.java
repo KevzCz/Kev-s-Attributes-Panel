@@ -9,6 +9,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.pixeldreamstudios.attributepanel.KevsAttributesPanel;
+import net.pixeldreamstudios.attributepanel.client.KeybindHandler;
 import net.pixeldreamstudios.attributepanel.command.AttributeSnapshotCommand;
 import net.pixeldreamstudios.attributepanel.config.ConfigScreenBuilder;
 
@@ -18,6 +19,7 @@ public class KevsAttributesPanelNeoforgeClient {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         AttributeSnapshotCommand.register();
+        KeybindHandler.register();
 
         event.enqueueWork(() -> {
             ModContainer container = ModLoadingContext.get().getActiveContainer();

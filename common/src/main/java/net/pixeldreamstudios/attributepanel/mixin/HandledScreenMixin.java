@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Environment(EnvType.CLIENT)
 @Mixin(AbstractContainerScreen.class)
-public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extends Screen {
+public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extends Screen implements AttributePanelAccessor {
 
     protected HandledScreenMixin(Component title) {
         super(title);
@@ -142,5 +142,10 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
                 cir.setReturnValue(true);
             }
         }
+    }
+
+    @Override
+    public AttributePanelDrawable attributespanel$getAttributePanel() {
+        return attributespanel$attributePanel;
     }
 }
