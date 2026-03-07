@@ -832,7 +832,6 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                     continue;
                 }
 
-                SEARCH_EQUIPPED:
                 for (EquipmentSlot slot : EquipmentSlot.values()) {
                     ItemStack stack = player.getItemBySlot(slot);
                     if (stack.isEmpty()) continue;

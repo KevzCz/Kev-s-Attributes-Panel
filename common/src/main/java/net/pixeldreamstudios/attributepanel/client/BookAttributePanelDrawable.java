@@ -438,7 +438,6 @@ class BookAttributePanelDrawable {
                     continue;
                 }
 
-                SEARCH_EQUIPPED:
                 for (EquipmentSlot slot : EquipmentSlot.values()) {
                     ItemStack stack = player.getSlot(slot.getIndex()).get();
                     if (stack.isEmpty()) continue;
@@ -456,7 +455,7 @@ class BookAttributePanelDrawable {
                         }
                     }
 
-                    if (! matched[0]) {
+                    if (!matched[0]) {
                         var defaultMods = stack.getItem().getDefaultAttributeModifiers();
                         for (var entry : defaultMods.modifiers()) {
                             if (entry.slot().test(slot) &&
@@ -471,7 +470,7 @@ class BookAttributePanelDrawable {
                     if (matched[0]) {
                         iconStack = stack;
                         try {
-                            if (! usedCustomName) displayName = stack.getHoverName().copy();
+                            if (!usedCustomName) displayName = stack.getHoverName().copy();
                         } catch (Exception ignored) {
                         }
                         foundSource = true;

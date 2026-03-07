@@ -1,10 +1,8 @@
 package net.pixeldreamstudios.attributepanel.client;
 
-import net.minecraft.core.Holder;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
+import net.minecraft.core.registries.*;
+import net.minecraft.resources.*;
+import net.pixeldreamstudios.attributepanel.config.*;
 
 public class ValueColorHelper {
 
@@ -39,7 +37,7 @@ public class ValueColorHelper {
 
         boolean isIncrease = change > 0;
 
-        boolean isPositiveChange = positiveWhenHigher ? isIncrease : !isIncrease;
+        boolean isPositiveChange = positiveWhenHigher == isIncrease;
 
         if (isPositiveChange) {
             return 0x00FF00;
