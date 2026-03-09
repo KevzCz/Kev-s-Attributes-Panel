@@ -146,7 +146,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             v = root.getAnimationState().getDisplayValue(stat.attribute(), v);
         }
         
-        if (stat.percent()) {
+        if (stat.displayMode().isPercent()) {
             v = v * 100.0;
             originalValue = originalValue * 100.0;
         }
@@ -158,7 +158,14 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         }
         
         String s = NUM_FMT.get().format(v);
-        return stat.percent() ? s + "%" : s;
+        
+        if (stat.displayMode().isPercent()) {
+            return s + "%";
+        } else if (stat.displayMode().isMultiplier()) {
+            return s + "x";
+        } else {
+            return s;
+        }
     }
 
     private float fontScale() {

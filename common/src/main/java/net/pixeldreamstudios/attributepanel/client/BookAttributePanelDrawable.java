@@ -119,7 +119,14 @@ class BookAttributePanelDrawable {
                 context.drawString(font, bottomLine, nameX, yOffset + 12, 0x6D5C48, false);
             }
 
-            String valueStr = stat.percent() ? String.format("%d%%", (int) (stat.current() * 100)) : String.format("%.2f", stat.current());
+            String valueStr;
+            if (stat.displayMode().isPercent()) {
+                valueStr = String.format("%d%%", (int) (stat.current() * 100));
+            } else if (stat.displayMode().isMultiplier()) {
+                valueStr = String.format("%.2fx", stat.current());
+            } else {
+                valueStr = String.format("%.2f", stat.current());
+            }
             int color = stat.isChanged() ? (stat.current() > stat.base() ? 0x55FF55 : 0xFF5555) : 0xAAAAAA;
             valueStr += stat.isChanged() ? (stat.current() > stat.base() ? " ↑" : " ↓") : "";
 

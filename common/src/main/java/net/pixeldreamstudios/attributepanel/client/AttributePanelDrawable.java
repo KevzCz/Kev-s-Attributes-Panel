@@ -242,33 +242,66 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
 
             double rawBase = instance.getBaseValue();
             double rawValue = instance.getValue();
-            enum Mode { NONE, FRACTION_0_TO_1, BASE_100 }
-            Mode mode = Mode.NONE;
+            
+            DisplayMode displayMode = DisplayMode.NONE;
 
+            // Check explicit attribute ID lists first
             if (AttributesPanelConfig.INSTANCE.percentAttributesBase100.contains(idStr)) {
-                mode = Mode.BASE_100;
+                displayMode = DisplayMode.BASE_100;
             } else if (AttributesPanelConfig.INSTANCE.percentAttributes.contains(idStr)) {
-                mode = Mode.FRACTION_0_TO_1;
+                displayMode = DisplayMode.FRACTION_0_TO_1;
+            } else if (AttributesPanelConfig.INSTANCE.multiplierAttributesBase100.contains(idStr)) {
+                displayMode = DisplayMode.MULTIPLIER_BASE_100;
+            } else if (AttributesPanelConfig.INSTANCE.multiplierAttributesBase1.contains(idStr)) {
+                displayMode = DisplayMode.MULTIPLIER_BASE_1;
+            } else if (AttributesPanelConfig.INSTANCE.multiplierAttributesBase0.contains(idStr)) {
+                displayMode = DisplayMode.MULTIPLIER_BASE_0;
             } else {
+                // Otherwise check keywords in translation key
                 if (containsAny(tkey, AttributesPanelConfig.INSTANCE.percentBase100Keywords)) {
-                    mode = Mode.BASE_100;
+                    displayMode = DisplayMode.BASE_100;
                 } else if (containsAny(tkey, AttributesPanelConfig.INSTANCE.percentKeywords)) {
-                    mode = Mode.FRACTION_0_TO_1;
+                    displayMode = DisplayMode.FRACTION_0_TO_1;
+                } else if (containsAny(tkey, AttributesPanelConfig.INSTANCE.multiplierBase100Keywords)) {
+                    displayMode = DisplayMode.MULTIPLIER_BASE_100;
+                } else if (containsAny(tkey, AttributesPanelConfig.INSTANCE.multiplierBase1Keywords)) {
+                    displayMode = DisplayMode.MULTIPLIER_BASE_1;
+                } else if (containsAny(tkey, AttributesPanelConfig.INSTANCE.multiplierBase0Keywords)) {
+                    displayMode = DisplayMode.MULTIPLIER_BASE_0;
                 }
             }
 
             double baseForDisplay = rawBase;
             double valueForDisplay = rawValue;
-            boolean isPercent = mode != Mode.NONE;
 
-            if (mode == Mode.BASE_100) {
-                if (Math.abs(rawBase) < 0.001) {
-                    baseForDisplay = 0.0;
+            switch (displayMode) {
+                case BASE_100:
+                    if (Math.abs(rawBase) < 0.001) {
+                        baseForDisplay = 0.0;
+                        valueForDisplay = rawValue;
+                    } else {
+                        baseForDisplay = 0.0;
+                        valueForDisplay = (rawValue - rawBase) / rawBase;
+                    }
+                    break;
+                    
+                case MULTIPLIER_BASE_100:
+                    baseForDisplay = rawBase / 100.0;
+                    valueForDisplay = rawValue / 100.0;
+                    break;
+                    
+                case MULTIPLIER_BASE_1:
+                    baseForDisplay = rawBase;
                     valueForDisplay = rawValue;
-                } else {
-                    baseForDisplay = 0.0;
-                    valueForDisplay = (rawValue - rawBase) / rawBase;
-                }
+                    break;
+                    
+                case MULTIPLIER_BASE_0:
+                    baseForDisplay = rawBase;
+                    valueForDisplay = rawValue;
+                    break;
+                    
+                default:
+                    break;
             }
 
             int bonusCount = 0;
@@ -295,7 +328,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
                     Component.translatable(attr.getDescriptionId()),
                     baseForDisplay,
                     valueForDisplay,
-                    isPercent,
+                    displayMode,
                     entry,
                     bonusCount,
                     rawBase,

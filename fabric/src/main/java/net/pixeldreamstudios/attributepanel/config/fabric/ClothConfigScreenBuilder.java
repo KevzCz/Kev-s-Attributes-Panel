@@ -149,6 +149,48 @@ public class ClothConfigScreenBuilder {
                 .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.percentBase100Keywords = list)
                 .build());
 
+        cat.addEntry(eb.startStrList(
+                        Component.translatable("config.attributepanel.multiplier_base100"),
+                        new ArrayList<>(AttributesPanelConfig.INSTANCE.multiplierAttributesBase100))
+                .setTooltip(Component.translatable("config.attributepanel.multiplier_base100.tooltip"))
+                .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.multiplierAttributesBase100 = list)
+                .build());
+
+        cat.addEntry(eb.startStrList(
+                        Component.translatable("config.attributepanel.multiplier_base1"),
+                        new ArrayList<>(AttributesPanelConfig.INSTANCE.multiplierAttributesBase1))
+                .setTooltip(Component.translatable("config.attributepanel.multiplier_base1.tooltip"))
+                .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.multiplierAttributesBase1 = list)
+                .build());
+
+        cat.addEntry(eb.startStrList(
+                        Component.translatable("config.attributepanel.multiplier_base0"),
+                        new ArrayList<>(AttributesPanelConfig.INSTANCE.multiplierAttributesBase0))
+                .setTooltip(Component.translatable("config.attributepanel.multiplier_base0.tooltip"))
+                .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.multiplierAttributesBase0 = list)
+                .build());
+
+        cat.addEntry(eb.startStrList(
+                        Component.translatable("config.attributepanel.multiplier_keywords_base100"),
+                        new ArrayList<>(AttributesPanelConfig.INSTANCE.multiplierBase100Keywords))
+                .setTooltip(Component.translatable("config.attributepanel.multiplier_keywords_base100.tooltip"))
+                .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.multiplierBase100Keywords = list)
+                .build());
+
+        cat.addEntry(eb.startStrList(
+                        Component.translatable("config.attributepanel.multiplier_keywords_base1"),
+                        new ArrayList<>(AttributesPanelConfig.INSTANCE.multiplierBase1Keywords))
+                .setTooltip(Component.translatable("config.attributepanel.multiplier_keywords_base1.tooltip"))
+                .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.multiplierBase1Keywords = list)
+                .build());
+
+        cat.addEntry(eb.startStrList(
+                        Component.translatable("config.attributepanel.multiplier_keywords_base0"),
+                        new ArrayList<>(AttributesPanelConfig.INSTANCE.multiplierBase0Keywords))
+                .setTooltip(Component.translatable("config.attributepanel.multiplier_keywords_base0.tooltip"))
+                .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.multiplierBase0Keywords = list)
+                .build());
+
         cat.addEntry(eb.startBooleanToggle(Component.literal("Force track visible attributes"),
                         AttributesPanelConfig.INSTANCE.forceTrackVisibleAttributes)
                 .setTooltip(Component.literal("Attributes shown on the panel will be force synced from the server.Requires restart to take effect! "))

@@ -71,6 +71,14 @@ public class AttributesPanelConfig {
     public List<String> percentBase100Keywords = new ArrayList<>(List.of(
             "overload_chance", "chance"
     ));
+    
+    public List<String> multiplierAttributesBase100 = new ArrayList<>();
+    public List<String> multiplierAttributesBase1 = new ArrayList<>();
+    public List<String> multiplierAttributesBase0 = new ArrayList<>();
+    public List<String> multiplierBase100Keywords = new ArrayList<>();
+    public List<String> multiplierBase1Keywords = new ArrayList<>();
+    public List<String> multiplierBase0Keywords = new ArrayList<>();
+    
     public boolean forceTrackVisibleAttributes = true;
     public CompactSettings compact = CompactSettings.defaultPreset();
 
@@ -101,6 +109,26 @@ public class AttributesPanelConfig {
                 if (INSTANCE.positiveWhenLower == null) {
                     INSTANCE.positiveWhenLower = new ArrayList<>(List.of("spell_engine:damage_taken"));
                 }
+                
+                if (INSTANCE.multiplierAttributesBase100 == null) {
+                    INSTANCE.multiplierAttributesBase100 = new ArrayList<>();
+                }
+                if (INSTANCE.multiplierAttributesBase1 == null) {
+                    INSTANCE.multiplierAttributesBase1 = new ArrayList<>();
+                }
+                if (INSTANCE.multiplierAttributesBase0 == null) {
+                    INSTANCE.multiplierAttributesBase0 = new ArrayList<>();
+                }
+                if (INSTANCE.multiplierBase100Keywords == null) {
+                    INSTANCE.multiplierBase100Keywords = new ArrayList<>();
+                }
+                if (INSTANCE.multiplierBase1Keywords == null) {
+                    INSTANCE.multiplierBase1Keywords = new ArrayList<>();
+                }
+                if (INSTANCE.multiplierBase0Keywords == null) {
+                    INSTANCE.multiplierBase0Keywords = new ArrayList<>();
+                }
+                
                 return;
             } catch (Exception e) {
                 System.err.println("[Kev's Attributes Panel] Failed to read config: " + e.getMessage());

@@ -8,18 +8,27 @@ public record StatEntry(
         Component name,
         double base,
         double current,
-        boolean percent,
+        DisplayMode displayMode,
         Holder<Attribute> attribute,
         int bonusCount,
         double rawBase,
         double rawCurrent
 ) {
     public StatEntry(Component name, double base, double current, boolean percent, Holder<Attribute> attribute) {
-        this(name, base, current, percent, attribute, 0, base, current);
+        this(name, base, current, percent ? DisplayMode.FRACTION_0_TO_1 : DisplayMode.NONE, attribute, 0, base, current);
     }
 
     public StatEntry(Component name, double base, double current, boolean percent, Holder<Attribute> attribute, int bonusCount) {
-        this(name, base, current, percent, attribute, bonusCount, base, current);
+        this(name, base, current, percent ? DisplayMode.FRACTION_0_TO_1 : DisplayMode.NONE, attribute, bonusCount, base, current);
+    }
+    
+    public StatEntry(Component name, double base, double current, DisplayMode displayMode, Holder<Attribute> attribute, int bonusCount) {
+        this(name, base, current, displayMode, attribute, bonusCount, base, current);
+    }
+    
+    @Deprecated
+    public boolean percent() {
+        return displayMode.isPercent();
     }
 
     public boolean isChanged() {
