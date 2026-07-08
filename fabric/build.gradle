@@ -47,6 +47,8 @@ dependencies {
     modCompileOnly "curse.maven:spell-engine-807653:7396348"
 
     modCompileOnly "curse.maven:icon-leading-tooltip-1335640:7395672"
+
+    modCompileOnly "curse.maven:tiered-more-1275090:8362003"
 }
 
 processResources {

@@ -28,6 +28,7 @@
   "attributepanel.message.no_changed_attributes": "No changed attributes",
   "attributepanel.message.bonuses": "Bonuses:",
   "attributepanel.message.modifiers": "Modifiers:",
+  "attributepanel.message.imprints": "IMPRINTS",
   "attributepanel.tooltip.base": "Base: %s",
   "attributepanel.tooltip.final": "Final: %s",
   "attributepanel.tooltip.hold_shift": "Hold ⇧ Shift to show calculation",

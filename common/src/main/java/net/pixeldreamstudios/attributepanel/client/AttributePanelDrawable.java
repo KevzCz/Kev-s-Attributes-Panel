@@ -72,8 +72,15 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         this.height = inventoryHeight;
     }
 
+    private static boolean expandedMemory = false;
+
+    public static boolean getExpandedMemory() {
+        return expandedMemory;
+    }
+
     public void toggle() {
         expanded = !expanded;
+        expandedMemory = expanded;
         currentPage = 0;
         if (expanded) {
             cacheStats();
@@ -91,6 +98,18 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
 
     public boolean isExpanded() {
         return expanded;
+    }
+
+    /** Restore expanded state (e.g. after a screen re-init on resize) without toggling. */
+    public void setExpanded(boolean expanded) {
+        this.expanded = expanded;
+        expandedMemory = expanded;
+        this.currentPage = 0;
+        if (expanded) {
+            cacheStats();
+        } else {
+            animationState.reset();
+        }
     }
 
     @Override
@@ -153,6 +172,14 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         return mouseX >= bgX && mouseX <= bgX + bgWidth && mouseY >= bgY && mouseY <= bgY + bgHeight;
     }
 
+    /** Late draw for the compact panel's draggable imprint window (above item slots). */
+    public void renderImprintWindowLate(GuiGraphics context) {
+        if (!expanded) return;
+        if (AttributesPanelConfig.INSTANCE.guiStyle == AttributesPanelConfig.GuiStyle.COMPACT) {
+            compactGui.renderImprintWindowLate(context);
+        }
+    }
+
     public void renderTooltip(GuiGraphics context) {
         if (queuedTooltip == null || queuedTooltip.isEmpty()) return;
         Font font = client.font;
@@ -184,6 +211,22 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         drawX = Math.max(drawX, 4);
         drawY = Math.max(drawY, 4);
 
+        boolean useFantasyStyle = AttributesPanelConfig.INSTANCE.guiStyle == AttributesPanelConfig.GuiStyle.COMPACT 
+                && AttributesPanelConfig.INSTANCE.compact.altCalcTooltip;
+
+        if (useFantasyStyle) {
+            drawFantasyTooltip(context, pose, font, lines, icons, drawX, drawY, tooltipWidth, tooltipHeight);
+        } else {
+            drawVanillaTooltip(context, pose, font, lines, icons, drawX, drawY, tooltipWidth, tooltipHeight);
+        }
+
+        pose.popPose();
+        queuedTooltip = null;
+        queuedTooltipIcons = null;
+    }
+
+    private void drawVanillaTooltip(GuiGraphics context, PoseStack pose, Font font, List<Component> lines, 
+                                     List<ItemStack> icons, int drawX, int drawY, int tooltipWidth, int tooltipHeight) {
         int backgroundColor = 0xF0131313;
         int borderColor = 0xFF5A5A5A;
 
@@ -208,7 +251,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
                 final int texSize = 12;
                 context.blit(tex, drawX, lineY, 0, 0, texSize, texSize, texSize, texSize);
                 iconOffset = 18;
-            } else if (! icon.isEmpty()) {
+            } else if (!icon.isEmpty()) {
                 pose.pushPose();
                 pose.translate(drawX, lineY, 0);
                 pose.scale(0.85f, 0.85f, 1f);
@@ -220,10 +263,72 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             int textX = drawX + iconOffset;
             context.drawString(font, lines.get(i), textX, lineY + 2, 0xFFFFFF, false);
         }
+    }
 
-        pose.popPose();
-        queuedTooltip = null;
-        queuedTooltipIcons = null;
+    private void drawFantasyTooltip(GuiGraphics context, PoseStack pose, Font font, List<Component> lines,
+                                     List<ItemStack> icons, int drawX, int drawY, int tooltipWidth, int tooltipHeight) {
+        int bgDark = 0xF0201510;
+        int bgLight = 0xF0382820;
+        int borderOuter = 0xFFFFD700;
+        int borderInner = 0xFF8B4513;
+        int cornerGlow = 0x80FFAA00;
+
+
+        context.fillGradient(drawX - 4, drawY - 4, drawX + tooltipWidth + 4, drawY + tooltipHeight, bgDark, bgLight);
+
+        context.fill(drawX - 5, drawY - 5, drawX + tooltipWidth + 5, drawY - 4, borderOuter);
+        context.fill(drawX - 5, drawY + tooltipHeight + 1, drawX + tooltipWidth + 5, drawY + tooltipHeight + 2, borderOuter);
+        context.fill(drawX - 5, drawY - 5, drawX - 4, drawY + tooltipHeight + 2, borderOuter);
+        context.fill(drawX + tooltipWidth + 4, drawY - 5, drawX + tooltipWidth + 5, drawY + tooltipHeight + 2, borderOuter);
+        
+        context.fill(drawX - 4, drawY - 4, drawX + tooltipWidth + 4, drawY - 3, borderInner);
+        context.fill(drawX - 4, drawY + tooltipHeight, drawX + tooltipWidth + 4, drawY + tooltipHeight + 1, borderInner);
+        context.fill(drawX - 4, drawY - 4, drawX - 3, drawY + tooltipHeight + 1, borderInner);
+        context.fill(drawX + tooltipWidth + 3, drawY - 4, drawX + tooltipWidth + 4, drawY + tooltipHeight + 1, borderInner);
+        
+        int cornerSize = 2;
+        context.fill(drawX - 6, drawY - 6, drawX - 6 + cornerSize, drawY - 6 + cornerSize, cornerGlow);
+        context.fill(drawX + tooltipWidth + 4, drawY - 6, drawX + tooltipWidth + 4 + cornerSize, drawY - 6 + cornerSize, cornerGlow);
+        context.fill(drawX - 6, drawY + tooltipHeight, drawX - 6 + cornerSize, drawY + tooltipHeight + cornerSize, cornerGlow);
+        context.fill(drawX + tooltipWidth + 4, drawY + tooltipHeight, drawX + tooltipWidth + 4 + cornerSize, drawY + tooltipHeight + cornerSize, cornerGlow);
+
+        for (int i = 0; i < lines.size(); i++) {
+            int lineY = drawY + i * (font.lineHeight + 4);
+            if (i > 0) {
+                context.fill(drawX, lineY - 2, drawX + tooltipWidth, lineY - 1, 0x20000000);
+            }
+        }
+
+        for (int i = 0; i < lines.size(); i++) {
+            int lineY = drawY + i * (font.lineHeight + 4);
+
+            ItemStack icon = (queuedTooltipIcons != null && i < queuedTooltipIcons.size())
+                    ? queuedTooltipIcons.get(i) : ItemStack.EMPTY;
+
+            ResourceLocation tex = (queuedTooltipTextures != null && i < queuedTooltipTextures.size())
+                    ? queuedTooltipTextures.get(i) : null;
+
+            int iconOffset = 0;
+
+            if (tex != null) {
+                final int texSize = 12;
+                context.fill(drawX - 1, lineY - 1, drawX + texSize + 1, lineY + texSize + 1, 0x30FFD700);
+                context.blit(tex, drawX, lineY, 0, 0, texSize, texSize, texSize, texSize);
+                iconOffset = 18;
+            } else if (!icon.isEmpty()) {
+                context.fill(drawX - 1, lineY - 1, drawX + 15, lineY + 15, 0x20FFAA00);
+                pose.pushPose();
+                pose.translate(drawX, lineY, 0);
+                pose.scale(0.85f, 0.85f, 1f);
+                context.renderItem(icon, 0, 0);
+                pose.popPose();
+                iconOffset = 18;
+            }
+
+            int textX = drawX + iconOffset;
+            context.drawString(font, lines.get(i), textX + 1, lineY + 3, 0x80000000, false);
+            context.drawString(font, lines.get(i), textX, lineY + 2, 0xFFFFE0B0, false);
+        }
     }
 
     protected void cacheStats() {
@@ -245,7 +350,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             
             DisplayMode displayMode = DisplayMode.NONE;
 
-            // Check explicit attribute ID lists first
+
             if (AttributesPanelConfig.INSTANCE.percentAttributesBase100.contains(idStr)) {
                 displayMode = DisplayMode.BASE_100;
             } else if (AttributesPanelConfig.INSTANCE.percentAttributes.contains(idStr)) {
@@ -257,7 +362,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             } else if (AttributesPanelConfig.INSTANCE.multiplierAttributesBase0.contains(idStr)) {
                 displayMode = DisplayMode.MULTIPLIER_BASE_0;
             } else {
-                // Otherwise check keywords in translation key
+
                 if (containsAny(tkey, AttributesPanelConfig.INSTANCE.percentBase100Keywords)) {
                     displayMode = DisplayMode.BASE_100;
                 } else if (containsAny(tkey, AttributesPanelConfig.INSTANCE.percentKeywords)) {

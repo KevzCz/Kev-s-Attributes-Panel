@@ -62,6 +62,20 @@ public class ClothConfigScreenBuilder {
                 .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.panelOffsetY = v)
                 .build());
 
+        cat.addEntry(eb.startIntField(Component.literal("Creative button X offset"),
+                        AttributesPanelConfig.INSTANCE.creativeXOffset)
+                .setDefaultValue(-23)
+                .setTooltip(Component.literal("Toggle-button X position on the creative inventory tab (button only; panel uses the same offsets as survival)."))
+                .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.creativeXOffset = v)
+                .build());
+
+        cat.addEntry(eb.startIntField(Component.literal("Creative button Y offset"),
+                        AttributesPanelConfig.INSTANCE.creativeYOffset)
+                .setDefaultValue(7)
+                .setTooltip(Component.literal("Toggle-button Y position on the creative inventory tab."))
+                .setSaveConsumer(v -> AttributesPanelConfig.INSTANCE.creativeYOffset = v)
+                .build());
+
         AbstractConfigListEntry<AttributesPanelConfig.GuiStyle> guiStyleEntry =
                 eb.startEnumSelector(Component.translatable("config.attributepanel.gui_style"),
                                 AttributesPanelConfig.GuiStyle.class,
@@ -271,6 +285,20 @@ public class ClothConfigScreenBuilder {
                         .setSaveConsumer(v -> safeSettings().textTheme = v)
                         .build()
         );
+
+        compactSC.add(eb.startBooleanToggle(Component.literal("Enable stat hover effect"),
+                        safeSettings().statHoverEffect)
+                .setDefaultValue(false)
+                .setTooltip(Component.literal("Adds a fantasy-themed golden glow when hovering over attribute stats."))
+                .setSaveConsumer(v -> safeSettings().statHoverEffect = v)
+                .build());
+
+        compactSC.add(eb.startBooleanToggle(Component.literal("Enable fantasy calculation tooltip"),
+                        safeSettings().altCalcTooltip)
+                .setDefaultValue(false)
+                .setTooltip(Component.literal("Replaces the vanilla tooltip with a fantasy-styled parchment tooltip with ornate borders."))
+                .setSaveConsumer(v -> safeSettings().altCalcTooltip = v)
+                .build());
 
         for (int i = 0; i < workingHeaders.size(); i++) {
             final int idx = i;

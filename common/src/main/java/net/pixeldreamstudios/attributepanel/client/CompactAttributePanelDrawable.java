@@ -34,6 +34,7 @@ import net.minecraft.world.item.enchantment.EnchantmentInstance;
 import net.pixeldreamstudios.attributepanel.compat.AccessoriesCompat;
 import net.pixeldreamstudios.attributepanel.compat.CuriosCompat;
 import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
+import net.pixeldreamstudios.attributepanel.compat.TieredMoreCompat;
 import net.pixeldreamstudios.attributepanel.compat.TrinketsCompat;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
 import org.lwjgl.glfw.GLFW;
@@ -106,6 +107,31 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     private int globalTooltipScrollOffset = 0;
     private static final int GLOBAL_TOOLTIP_SCROLL_STEP = 10;
     private TooltipRenderData cachedTooltipData = null;
+
+    private static final int IMPRINTS_PLATE_H = 12;
+    private static final int IMPRINTS_PLATE_PAD_X = 4;
+    private static final float IMPRINTS_HEADER_PLATE_SCALE = 0.8f;
+    private static final int IMPRINTS_PLATE_BOTTOM_GAP = -2;
+    private boolean hoveringImprintsPlate = false;
+    private int imprintPlateX = 0, imprintPlateY = 0, imprintPlateW = 0, imprintPlateH = 0;
+    private boolean imprintPlateVisible = false;
+
+    private boolean imprintWindowOpen = false;
+    private boolean imprintWindowPosInit = false;
+    private int imprintWindowX = 0;
+    private int imprintWindowY = 0;
+    private int imprintWindowScroll = 0;
+    private boolean draggingImprintWindow = false;
+    private int imprintDragGrabX = 0;
+    private int imprintDragGrabY = 0;
+    private boolean hoveringImprintDragHandle = false;
+    private int imprintWindowW = 0;
+    private int imprintWindowH = 0;
+    private static final int IMPRINT_WIN_PAD = 5;
+    private static final int IMPRINT_WIN_HANDLE = 6;
+    private static final int IMPRINT_WIN_SCROLL_STEP = 12;
+    private int lastMouseX = 0, lastMouseY = 0;
+    private List<TieredMoreCompat.ImprintState> pendingImprintTooltip = null;
 
     private static class TooltipRenderData {
         List<Component> allLines;
@@ -224,6 +250,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     @Override
     public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         Font font = root.mc().font;
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
 
         int bgX = root.left() - 16;
         int bgY = root.top();
@@ -266,6 +294,47 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         } else {
             globalTooltipScrollOffset = 0;
             cachedTooltipData = null;
+        }
+
+        List<TieredMoreCompat.ImprintState> imprints =
+                TieredMoreCompat.getActiveImprints(root.mc().player);
+        hoveringImprintsPlate = false;
+        imprintPlateVisible = false;
+        pendingImprintTooltip = imprints;
+        if (!imprints.isEmpty()) {
+            Component plateLabel = Component.translatable("attributepanel.message.imprints", "IMPRINTS")
+                    .withStyle(ChatFormatting.BOLD);
+            int plateW = IMPRINTS_PLATE_PAD_X + font.width(plateLabel) + IMPRINTS_PLATE_PAD_X;
+
+            float headerScale = IMPRINTS_HEADER_PLATE_SCALE;
+            int scaledW = Math.round(plateW * headerScale);
+            int scaledH = Math.round(IMPRINTS_PLATE_H * headerScale);
+
+            int gapStart = searchX + SEARCH_ICON_SIZE;
+            int plateX = gapStart + (infoX - gapStart - scaledW) / 2;
+            int plateY = bgY + bgH - scaledH - IMPRINTS_PLATE_BOTTOM_GAP;
+
+            imprintPlateX = plateX;
+            imprintPlateY = plateY;
+            imprintPlateW = scaledW;
+            imprintPlateH = scaledH;
+            imprintPlateVisible = true;
+
+            hoveringImprintsPlate = mouseX >= plateX && mouseX <= plateX + scaledW &&
+                    mouseY >= plateY && mouseY <= plateY + scaledH;
+
+            int headerFill = 0xFF000000 | (imprints.get(0).plateColorRgb() & 0xFFFFFF);
+
+            ctx.pose().pushPose();
+            ctx.pose().translate(plateX, plateY, 0f);
+            ctx.pose().scale(headerScale, headerScale, 1f);
+
+            drawImprintPlate(ctx, 0, 0, plateW, IMPRINTS_PLATE_H, plateLabel,
+                    headerFill, 1.0f, false);
+            ctx.pose().popPose();
+        } else {
+            imprintWindowOpen = false;
+            draggingImprintWindow = false;
         }
 
         if (searchVisible) {
@@ -343,10 +412,16 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                 case DIVIDER -> drawDivider(ctx, innerX, innerW, y);
                 case HEADER -> drawHeader(ctx, font, innerX, innerW, y, it.header);
                 case STAT -> {
+                    boolean isHovered = mouseX >= innerX && mouseX <= innerX + innerW &&
+                            mouseY >= y && mouseY <= y + ROW_H_TEXT;
+                    
+                    if (isHovered && AttributesPanelConfig.INSTANCE.compact.statHoverEffect) {
+                        drawStatHoverEffect(ctx, innerX, innerW, y);
+                    }
+                    
                     drawStat(ctx, font, innerX, y, it.stat);
 
-                    if (mouseX >= innerX && mouseX <= innerX + innerW &&
-                            mouseY >= y && mouseY <= y + ROW_H_TEXT) {
+                    if (isHovered) {
                         handleStatHover(font, innerX, y, it.stat, mouseX, mouseY);
                     }
                 }
@@ -359,6 +434,16 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         ctx.disableScissor();
 
         drawScrollbar(ctx, bgX, bgY, bgW, innerY, innerH, contentH);
+    }
+
+    public void renderImprintWindowLate(GuiGraphics ctx) {
+        drawPendingImprintTooltip(ctx);
+    }
+
+    private void drawPendingImprintTooltip(GuiGraphics ctx) {
+        if (imprintWindowOpen && pendingImprintTooltip != null && !pendingImprintTooltip.isEmpty()) {
+            drawImprintWindow(ctx, pendingImprintTooltip, lastMouseX, lastMouseY);
+        }
     }
 
     private void drawEmptyState(GuiGraphics ctx, Font font, int innerX, int innerW, int innerY) {
@@ -1208,7 +1293,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                 } else if (rawId.getNamespace().equals("tiered")) {
                     String[] pp = rawId.getPath().split("_");
                     String tier = pp.length > 0 ? (pp[0].substring(0, 1).toUpperCase() + pp[0].substring(1).toLowerCase()) : "Tiered";
-                    lines.add(Component.literal(tier + " Bonus:    ").withStyle(ChatFormatting.AQUA)
+                    lines.add(Component.literal(tier + " Bonus: ").withStyle(ChatFormatting.AQUA)
                             .append(Component.literal(opText).withStyle(ChatFormatting.GREEN)));
                     icons.add(new ItemStack(Items.ANVIL));
                     texIcons.add(null);
@@ -1387,6 +1472,29 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return false;
+
+        if (imprintWindowOpen) {
+            int handleX = imprintWindowX + imprintWindowW - IMPRINT_WIN_HANDLE - 3;
+            int handleY = imprintWindowY + 3;
+            if (mouseX >= handleX && mouseX <= handleX + IMPRINT_WIN_HANDLE &&
+                    mouseY >= handleY && mouseY <= handleY + IMPRINT_WIN_HANDLE) {
+                draggingImprintWindow = true;
+                imprintDragGrabX = (int) (mouseX - imprintWindowX);
+                imprintDragGrabY = (int) (mouseY - imprintWindowY);
+                return true;
+            }
+            if (mouseX >= imprintWindowX && mouseX <= imprintWindowX + imprintWindowW &&
+                    mouseY >= imprintWindowY && mouseY <= imprintWindowY + imprintWindowH) {
+                return true;
+            }
+        }
+
+        if (imprintPlateVisible &&
+                mouseX >= imprintPlateX && mouseX <= imprintPlateX + imprintPlateW &&
+                mouseY >= imprintPlateY && mouseY <= imprintPlateY + imprintPlateH) {
+            imprintWindowOpen = !imprintWindowOpen;
+            return true;
+        }
 
         int bgX = root.left() - 16;
         int bgY = root.top();
@@ -1637,6 +1745,10 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0 && draggingImprintWindow) {
+            draggingImprintWindow = false;
+            return true;
+        }
         if (button == 0 && draggingBar) {
             draggingBar = false;
             return true;
@@ -1646,6 +1758,11 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
+        if (draggingImprintWindow && button == 0) {
+            imprintWindowX = (int) (mouseX - imprintDragGrabX);
+            imprintWindowY = (int) (mouseY - imprintDragGrabY);
+            return true;
+        }
         if (!draggingBar || button != 0) return false;
         BarGeom g = computeBarGeom();
         if (!g.visible) return false;
@@ -1657,6 +1774,15 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (imprintWindowOpen &&
+                mouseX >= imprintWindowX && mouseX <= imprintWindowX + imprintWindowW &&
+                mouseY >= imprintWindowY && mouseY <= imprintWindowY + imprintWindowH) {
+            int deltaPx = (verticalAmount > 0) ? -IMPRINT_WIN_SCROLL_STEP : IMPRINT_WIN_SCROLL_STEP;
+            imprintWindowScroll += deltaPx;
+            if (imprintWindowScroll < 0) imprintWindowScroll = 0;
+            return true;
+        }
+
         int bgX = root.left() - 16;
         int bgY = root.top();
         int bgW = root.panelWidth() + 16;
@@ -2130,6 +2256,21 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         }
     }
 
+    private void drawStatHoverEffect(GuiGraphics ctx, int innerX, int innerW, int y) {
+        int x0 = innerX - 1;
+        int x1 = innerX + innerW + 1;
+        int y0 = y - 1;
+        int y1 = y + ROW_H_TEXT + 1;
+        
+        ctx.fillGradient(x0, y0, x1, y1, 0x20FFAA00, 0x10FFAA00);
+        
+        ctx.fill(x0, y0, x1, y0 + 1, 0x60FFD700);
+        ctx.fill(x0, y1 - 1, x1, y1, 0x40FFD700);
+        
+        ctx.fillGradient(x0, y0, x0 + 1, y1, 0x50FFAA00, 0x20FFAA00);
+        ctx.fillGradient(x1 - 1, y0, x1, y1, 0x50FFAA00, 0x20FFAA00);
+    }
+
     private void drawStat(GuiGraphics ctx, Font font, int innerX, int y, StatRow statRow) {
         String rawName = statRow.stat.name().getString();
         String translationKey = Component.translatable(statRow.stat.attribute().value().getDescriptionId()).getString();
@@ -2478,6 +2619,268 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             this.bullet = bullet;
             this.inBonusesGroup = inBonusesGroup;
         }
+    }
+    private void drawImprintPlate(GuiGraphics ctx, int x, int y, int w, int h, Component label,
+                                  int fill, float cooldownFill, boolean active) {
+        if (active) {
+            float pulse = 0.5f + 0.5f * (float) Math.sin((System.currentTimeMillis() % 1400L) / 1400.0 * Math.PI * 2);
+            fill = plateLighten(fill, 0.10f + pulse * 0.18f);
+        }
+        int top = plateLighten(fill, 0.18f);
+        int bottom = plateDarken(fill, 0.12f);
+        int border = plateDarken(fill, 0.45f);
+        int shadow = 0x55000000;
+
+        ctx.fill(x + 2, y + h, x + w, y + h + 1, shadow);
+        ctx.fill(x + w, y + 2, x + w + 1, y + h, shadow);
+
+        ctx.fillGradient(x + 1, y + 1, x + w - 1, y + h - 1, top, bottom);
+        ctx.fillGradient(x, y + 2, x + 1, y + h - 2, top, bottom);
+        ctx.fillGradient(x + w - 1, y + 2, x + w, y + h - 2, top, bottom);
+
+        ctx.fill(x + 1, y, x + w - 1, y + 1, border);
+        ctx.fill(x + 1, y + h - 1, x + w - 1, y + h, border);
+        ctx.fill(x, y + 2, x + 1, y + h - 2, border);
+        ctx.fill(x + w - 1, y + 2, x + w, y + h - 2, border);
+
+        ctx.fill(x + 2, y + 1, x + w - 2, y + 2, plateLighten(fill, 0.35f));
+
+        if ((fill & 0xFFFFFF) != 0x444444) {
+            drawPlateShine(ctx, x + 1, y + 1, w - 2, h - 2);
+        }
+
+        if (active) {
+            float pulse = 0.5f + 0.5f * (float) Math.sin((System.currentTimeMillis() % 1400L) / 1400.0 * Math.PI * 2);
+            int a = (int) (90 + pulse * 120) & 0xFF;
+            int glow = (a << 24) | (fill & 0xFFFFFF);
+            ctx.fill(x, y - 1, x + w, y, glow);
+            ctx.fill(x, y + h, x + w, y + h + 1, glow);
+            ctx.fill(x - 1, y, x, y + h, glow);
+            ctx.fill(x + w, y, x + w + 1, y + h, glow);
+        }
+
+        if (cooldownFill < 1f) {
+            float clamped = Math.max(0f, Math.min(1f, cooldownFill));
+            int filledPx = (int) (clamped * (w - 2));
+            int overlayX = x + 1 + filledPx;
+            int overlayW = (w - 2) - filledPx;
+            if (overlayW > 0) {
+                ctx.fill(overlayX, y + 1, overlayX + overlayW, y + h - 1, 0xAA000000);
+            }
+        }
+
+        Font font = root.mc().font;
+        int textColor = cooldownFill >= 1f ? 0xFFFFFFFF : lerpArgb(0xFF888888, 0xFFFFFFFF, cooldownFill);
+        int textY = y + (h - font.lineHeight) / 2 + 1;
+        ctx.drawString(font, label, x + IMPRINTS_PLATE_PAD_X, textY, textColor, true);
+    }
+
+    private static int plateLighten(int argb, float amt) {
+        int a = (argb >> 24) & 0xFF;
+        int r = plateClamp((int) (((argb >> 16) & 0xFF) + 255 * amt));
+        int g = plateClamp((int) (((argb >> 8) & 0xFF) + 255 * amt));
+        int b = plateClamp((int) ((argb & 0xFF) + 255 * amt));
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private static int plateDarken(int argb, float amt) {
+        int a = (argb >> 24) & 0xFF;
+        int r = (int) (((argb >> 16) & 0xFF) * (1 - amt));
+        int g = (int) (((argb >> 8) & 0xFF) * (1 - amt));
+        int b = (int) ((argb & 0xFF) * (1 - amt));
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private static int plateClamp(int v) {
+        return v < 0 ? 0 : Math.min(v, 255);
+    }
+
+    private static void drawPlateShine(GuiGraphics ctx, int x, int y, int w, int h) {
+        if (w <= 0 || h <= 0) return;
+        float shinePos = (float) ((System.currentTimeMillis() % 2200L) / 2200.0);
+        float bandHalf = 0.22f;
+        for (int dx = 0; dx < w; dx++) {
+            for (int dy = 0; dy < h; dy++) {
+                float diagPos = ((float) dx / w + (float) dy / h) * 0.5f;
+                float dist = Math.abs(diagPos - shinePos);
+                if (dist < bandHalf) {
+                    float intensity = (1.0f - dist / bandHalf) * 0.5f;
+                    int alpha = (int) (intensity * 255) & 0xFF;
+                    if (alpha <= 0) continue;
+                    int color = (alpha << 24) | 0xFFFFFF;
+                    ctx.fill(x + dx, y + dy, x + dx + 1, y + dy + 1, color);
+                }
+            }
+        }
+    }
+
+    private static int lerpArgb(int a, int b, float t) {
+        int aa = (a >> 24) & 0xFF, ar = (a >> 16) & 0xFF, ag = (a >> 8) & 0xFF, ab = a & 0xFF;
+        int ba = (b >> 24) & 0xFF, br = (b >> 16) & 0xFF, bg = (b >> 8) & 0xFF, bb = b & 0xFF;
+        int ra = aa + (int) ((ba - aa) * t);
+        int rr = ar + (int) ((br - ar) * t);
+        int rg = ag + (int) ((bg - ag) * t);
+        int rb = ab + (int) ((bb - ab) * t);
+        return (ra << 24) | (rr << 16) | (rg << 8) | rb;
+    }
+
+    private static final int IMPRINT_WIN_MAX_CONTENT_H = 120;
+
+    private void drawImprintWindow(GuiGraphics ctx, List<TieredMoreCompat.ImprintState> imprints,
+                                   int mouseX, int mouseY) {
+        Font font = root.mc().font;
+
+        int rowH = IMPRINTS_PLATE_H + 2;
+        int pad = IMPRINT_WIN_PAD;
+        int titleH = font.lineHeight + 4;
+        int plateTextGap = 4;
+
+        Component header = Component.translatable("attributepanel.message.imprints", "IMPRINTS")
+                .withStyle(ChatFormatting.GOLD);
+
+        int contentW = font.width(header) + IMPRINT_WIN_HANDLE + 6;
+        for (TieredMoreCompat.ImprintState imp : imprints) {
+            int plateW = IMPRINTS_PLATE_PAD_X + font.width(Component.translatable(imp.plateNameKey()))
+                    + IMPRINTS_PLATE_PAD_X;
+            int valueW = font.width(imprintValueText(imp));
+            contentW = Math.max(contentW, plateW + plateTextGap + valueW);
+        }
+
+        int titleGap = 2;
+
+        int fullContentH = imprints.size() * rowH;
+        int viewH = Math.min(fullContentH, IMPRINT_WIN_MAX_CONTENT_H);
+        boolean scrollable = fullContentH > viewH;
+
+        int winW = contentW + pad * 2 + (scrollable ? 4 : 0);
+        int winH = titleH + titleGap + viewH + pad;
+
+        int screenW = root.mc().getWindow().getGuiScaledWidth();
+        int screenH = root.mc().getWindow().getGuiScaledHeight();
+
+        if (!imprintWindowPosInit) {
+            if (imprintPlateVisible) {
+                imprintWindowX = imprintPlateX;
+                imprintWindowY = imprintPlateY - winH - 2;
+            } else {
+                imprintWindowX = (screenW - winW) / 2;
+                imprintWindowY = (screenH - winH) / 2;
+            }
+            imprintWindowPosInit = true;
+        }
+
+        imprintWindowX = Math.max(2, Math.min(imprintWindowX, screenW - winW - 2));
+        imprintWindowY = Math.max(2, Math.min(imprintWindowY, screenH - winH - 2));
+
+        int winX = imprintWindowX;
+        int winY = imprintWindowY;
+        imprintWindowW = winW;
+        imprintWindowH = winH;
+
+
+        int maxScroll = Math.max(0, fullContentH - viewH);
+        if (imprintWindowScroll > maxScroll) imprintWindowScroll = maxScroll;
+        if (imprintWindowScroll < 0) imprintWindowScroll = 0;
+
+
+        int handleX = winX + winW - IMPRINT_WIN_HANDLE - 3;
+        int handleY = winY + 3;
+        hoveringImprintDragHandle = mouseX >= handleX && mouseX <= handleX + IMPRINT_WIN_HANDLE &&
+                mouseY >= handleY && mouseY <= handleY + IMPRINT_WIN_HANDLE;
+
+        ctx.pose().pushPose();
+        ctx.pose().translate(0f, 0f, 600f);
+
+
+        ctx.fill(winX - 1, winY - 1, winX + winW + 1, winY + winH + 1, 0xF0100010);
+        ctx.fill(winX, winY, winX + winW, winY + winH, 0xF0100010);
+        ctx.renderOutline(winX, winY, winW, winH, 0x66FFFFFF);
+
+        ctx.fill(winX, winY, winX + winW, winY + titleH, 0x33FFFFFF);
+        ctx.drawString(font, header, winX + pad, winY + 3, 0xFFFFD700, false);
+
+        int gripColor = (hoveringImprintDragHandle || draggingImprintWindow) ? 0xFFFFE066 : 0xFF888888;
+        for (int i = 0; i < 3; i++) {
+            int gy = handleY + i * 2;
+            ctx.fill(handleX, gy, handleX + IMPRINT_WIN_HANDLE, gy + 1, gripColor);
+        }
+
+        int contentX = winX + pad;
+        int contentTop = winY + titleH + titleGap;
+        int contentBottom = contentTop + viewH;
+        ctx.enableScissor(winX, contentTop, winX + winW, contentBottom);
+
+        int cy = contentTop - imprintWindowScroll;
+        for (TieredMoreCompat.ImprintState imp : imprints) {
+            Component name = Component.translatable(imp.plateNameKey());
+            int plateW = IMPRINTS_PLATE_PAD_X + font.width(name) + IMPRINTS_PLATE_PAD_X;
+            int fill = 0xFF000000 | (imp.plateColorRgb() & 0xFFFFFF);
+
+            if (cy + rowH >= contentTop && cy <= contentBottom) {
+                drawImprintPlate(ctx, contentX, cy, plateW, IMPRINTS_PLATE_H, name,
+                        fill, imp.cooldownFill(), imp.active());
+
+                Component value = imprintValueText(imp);
+                int valueY = cy + (IMPRINTS_PLATE_H - font.lineHeight) / 2 + 1;
+                ctx.drawString(font, value, contentX + plateW + plateTextGap, valueY, 0xFFBBBBBB, true);
+            }
+            cy += rowH;
+        }
+        ctx.disableScissor();
+
+        if (scrollable) {
+            int sbX = winX + winW - 3;
+            int trackTop = contentTop;
+            int trackH = viewH;
+            ctx.fill(sbX, trackTop, sbX + 2, trackTop + trackH, 0x55000000);
+            float knobH = Math.max(8, trackH * (viewH / (float) fullContentH));
+            float knobY = trackTop + (trackH - knobH) * (imprintWindowScroll / (float) maxScroll);
+            ctx.fill(sbX, (int) knobY, sbX + 2, (int) (knobY + knobH), 0xCCFFFFFF);
+        }
+
+        ctx.pose().popPose();
+    }
+
+    private Component imprintValueText(TieredMoreCompat.ImprintState imp) {
+        StringBuilder sb = new StringBuilder();
+        if (imp.stacks() > 1) sb.append("x").append(imp.stacks()).append("  ");
+        String display = imp.valueDisplay();
+        if (!"none".equals(display)) {
+            if (imp.max() > 0f) {
+                sb.append(formatImprintValue(imp.current(), display))
+                        .append(" / ")
+                        .append(formatImprintValue(imp.max(), display));
+            } else {
+                sb.append(formatImprintValue(imp.current(), display));
+            }
+        }
+        return Component.literal(sb.toString());
+    }
+
+    private static String formatImprintValue(float value, String display) {
+        if ("percent".equals(display)) {
+            return Math.round(value * 100) + "%";
+        }
+        if ("seconds".equals(display)) {
+            return trimFloat(value / 20f) + "s";
+        }
+        if ("amp_level".equals(display)) {
+            return toRomanNumeral(Math.round(value) + 1);
+        }
+        return trimFloat(value);
+    }
+
+    private static final String[] ROMAN_NUMERALS =
+            {"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+
+    private static String toRomanNumeral(int n) {
+        if (n >= 0 && n < ROMAN_NUMERALS.length) return ROMAN_NUMERALS[n];
+        return Integer.toString(n);
+    }
+
+    private static String trimFloat(float v) {
+        if (v == Math.rint(v)) return Integer.toString((int) v);
+        return NUM_FMT.get().format(v);
     }
 
     private void drawGlobalBonusTooltip(GuiGraphics ctx, int mouseX, int mouseY) {

@@ -18,6 +18,11 @@ public class AttributesPanelConfig {
     public int panelOffsetX = -130;
     public int panelOffsetY = 0;
 
+    // Toggle-button position on the creative inventory tab (button only; the panel itself
+    // reuses panelOffsetX/panelOffsetY).
+    public int creativeXOffset = -23;
+    public int creativeYOffset = 7;
+
     public GuiStyle guiStyle = GuiStyle.COMPACT;
 
     public boolean hoverIconAnimation = true;
@@ -189,6 +194,9 @@ public class AttributesPanelConfig {
         public float textScale = 0.55f;
 
         public TextTheme textTheme = TextTheme.DARK;
+        
+        public boolean statHoverEffect = false;
+        public boolean altCalcTooltip = false;
 
         public static CompactSettings defaultPreset() {
             CompactSettings s = new CompactSettings();
@@ -240,6 +248,8 @@ public class AttributesPanelConfig {
             s.textScale = 0.55f;
 
             s.textTheme = TextTheme.DARK;
+            s.statHoverEffect = false;
+            s.altCalcTooltip = false;
 
             return s;
         }
