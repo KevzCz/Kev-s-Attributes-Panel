@@ -1,5 +1,6 @@
 package net.pixeldreamstudios.attributepanel.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -17,6 +18,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -114,12 +116,25 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
 
     @Override
     public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    }
+
+    public static final int PANEL_Z_OFFSET = 300;
+
+    public void renderLate(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!expanded) return;
+        PoseStack pose = context.pose();
+        pose.pushPose();
+        pose.translate(0, 0, PANEL_Z_OFFSET);
+        context.flush();
+        RenderSystem.depthMask(false);
         switch (AttributesPanelConfig.INSTANCE.guiStyle) {
             case BOOK -> bookGui.render(context, mouseX, mouseY, delta);
             case VANILLA -> vanillaGui.render(context, mouseX, mouseY, delta);
             case COMPACT -> compactGui.render(context, mouseX, mouseY, delta);
         }
+        context.flush();
+        RenderSystem.depthMask(true);
+        pose.popPose();
     }
 
     @Override
@@ -165,18 +180,35 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
         if (!expanded) return false;
-        int bgX = left() - 16;
-        int bgY = top();
-        int bgWidth = panelWidth() + 16;
-        int bgHeight = panelHeight();
-        return mouseX >= bgX && mouseX <= bgX + bgWidth && mouseY >= bgY && mouseY <= bgY + bgHeight;
+        return isWithinPanelBounds(mouseX, mouseY);
+    }
+
+    public boolean isWithinPanelBounds(double mouseX, double mouseY) {
+        int[] b = getPanelBounds();
+        if (b == null) return false;
+        return mouseX >= b[0] && mouseX <= b[0] + b[2] && mouseY >= b[1] && mouseY <= b[1] + b[3];
+    }
+
+    /** @return {x, y, width, height} of the visible panel, or null if not shown. */
+    public int[] getPanelBounds() {
+        if (!expanded) return null;
+        if (AttributesPanelConfig.INSTANCE.guiStyle != AttributesPanelConfig.GuiStyle.COMPACT) return null;
+        return new int[] { left() - 16, top(), panelWidth() + 16, panelHeight() };
     }
 
     /** Late draw for the compact panel's draggable imprint window (above item slots). */
     public void renderImprintWindowLate(GuiGraphics context) {
         if (!expanded) return;
         if (AttributesPanelConfig.INSTANCE.guiStyle == AttributesPanelConfig.GuiStyle.COMPACT) {
+            PoseStack pose = context.pose();
+            pose.pushPose();
+            pose.translate(0, 0, PANEL_Z_OFFSET);
+            context.flush();
+            RenderSystem.depthMask(false);
             compactGui.renderImprintWindowLate(context);
+            context.flush();
+            RenderSystem.depthMask(true);
+            pose.popPose();
         }
     }
 
@@ -908,7 +940,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         this.tooltipY = mouseY;
     }
 
-    protected ItemStack createColoredPotionItem(net.minecraft.world.effect.MobEffect effect) {
+    protected ItemStack createColoredPotionItem(MobEffect effect) {
         ItemStack stack = new ItemStack(Items.POTION);
         stack.set(DataComponents.CUSTOM_NAME, Component.translatable(effect.getDescriptionId()));
         CompoundTag nbt = new CompoundTag();

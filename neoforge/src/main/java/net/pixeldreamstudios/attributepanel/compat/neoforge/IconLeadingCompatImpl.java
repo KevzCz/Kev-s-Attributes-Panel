@@ -2,6 +2,7 @@ package net.pixeldreamstudios.attributepanel.compat.neoforge;
 
 import net.neoforged.fml.ModList;
 import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
+import net.pixeldreamstudios.iconleadingtooltip.util.IconLeadingUtil;
 
 public class IconLeadingCompatImpl {
 
@@ -11,13 +12,13 @@ public class IconLeadingCompatImpl {
 
     public static IconLeadingCompat.IconSplit extractIconImpl(String text) {
         try {
-            String noCodes = net.pixeldreamstudios.iconleadingtooltip.util.IconLeadingUtil.stripSectionCodes(text);
-            int[] span = net.pixeldreamstudios.iconleadingtooltip.util.IconLeadingUtil.firstIconSpan(noCodes);
+            String noCodes = IconLeadingUtil.stripSectionCodes(text);
+            int[] span = IconLeadingUtil.firstIconSpan(noCodes);
 
             if (span[0] >= 0) {
                 String icon = noCodes.substring(span[0], span[1]);
                 String rest = noCodes.substring(0, span[0]) + noCodes.substring(span[1]);
-                String clean = net.pixeldreamstudios.iconleadingtooltip.util.IconLeadingUtil.stripSectionCodes(rest).trim();
+                String clean = IconLeadingUtil.stripSectionCodes(rest).trim();
                 return new IconLeadingCompat.IconSplit(clean, icon);
             }
 
@@ -29,7 +30,7 @@ public class IconLeadingCompatImpl {
 
     public static boolean isIconGlyphImpl(int codepoint) {
         try {
-            return net.pixeldreamstudios.iconleadingtooltip.util.IconLeadingUtil.isIconGlyph(codepoint);
+            return IconLeadingUtil.isIconGlyph(codepoint);
         } catch (Exception e) {
             return false;
         }
@@ -37,7 +38,7 @@ public class IconLeadingCompatImpl {
 
     public static String stripSectionCodesImpl(String text) {
         try {
-            return net.pixeldreamstudios.iconleadingtooltip.util.IconLeadingUtil.stripSectionCodes(text);
+            return IconLeadingUtil.stripSectionCodes(text);
         } catch (Exception e) {
             return text;
         }

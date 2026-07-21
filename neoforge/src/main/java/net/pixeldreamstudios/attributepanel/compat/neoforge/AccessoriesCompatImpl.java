@@ -2,6 +2,7 @@ package net.pixeldreamstudios.attributepanel.compat.neoforge;
 
 import io.wispforest.accessories.api.AccessoriesAPI;
 import io.wispforest.accessories.api.AccessoriesCapability;
+import io.wispforest.accessories.api.slot.SlotReference;
 import net.minecraft.core.Holder;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -10,7 +11,8 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import net.pixeldreamstudios.attributepanel.compat.AccessoriesCompat;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AccessoriesCompatImpl {
 
@@ -35,8 +37,8 @@ public class AccessoriesCompatImpl {
                 ItemStack stack = container.getAccessories().getItem(i);
                 if (stack.isEmpty()) continue;
 
-                io.wispforest.accessories.api.slot.SlotReference slotRef =
-                        io.wispforest.accessories.api.slot.SlotReference.of(player, slotType, i);
+                SlotReference slotRef =
+                        SlotReference.of(player, slotType, i);
 
                 var builder = AccessoriesAPI.getAttributeModifiers(stack, slotRef);
                 var modifiers = builder.getAttributeModifiers(false);

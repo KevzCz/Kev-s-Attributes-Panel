@@ -148,6 +148,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     private void attributespanel$renderTooltipAfterEverything(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (!attributespanel$shouldAttach()) return;
         if (attributespanel$attributePanel != null && attributespanel$attributePanel.isExpanded()) {
+            attributespanel$attributePanel.renderLate(context, mouseX, mouseY, delta);
             attributespanel$attributePanel.renderImprintWindowLate(context);
             attributespanel$attributePanel.renderTooltip(context);
         }

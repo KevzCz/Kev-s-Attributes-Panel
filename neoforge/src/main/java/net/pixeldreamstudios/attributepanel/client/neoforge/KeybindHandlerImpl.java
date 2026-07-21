@@ -9,6 +9,7 @@ import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.common.*;
 import net.pixeldreamstudios.attributepanel.*;
 import net.pixeldreamstudios.attributepanel.api.AttributePanelAPI;
+import net.pixeldreamstudios.attributepanel.client.KeybindHandler;
 import org.lwjgl.glfw.*;
 
 @EventBusSubscriber(modid = KevsAttributesPanel.MOD_ID, value = Dist.CLIENT)
@@ -24,7 +25,7 @@ public class KeybindHandlerImpl {
         );
         event.register(quickOpenKeybind);
         
-        net.pixeldreamstudios.attributepanel.client.KeybindHandler.setQuickOpenKeybind(quickOpenKeybind);
+        KeybindHandler.setQuickOpenKeybind(quickOpenKeybind);
 
         NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post event2) -> {
             while (quickOpenKeybind.consumeClick()) {

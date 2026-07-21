@@ -24,6 +24,9 @@ subprojects {
     }
 
     repositories {
+        flatDir {
+            dirs "$rootProject.projectDir/lib"
+        }
         maven {
             name = 'Modrinth'
             url = 'https://api.modrinth.com/maven'

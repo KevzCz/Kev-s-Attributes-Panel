@@ -37,11 +37,13 @@ import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
 import net.pixeldreamstudios.attributepanel.compat.TieredMoreCompat;
 import net.pixeldreamstudios.attributepanel.compat.TrinketsCompat;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
+import net.spell_engine.api.item.set.EquipmentSet;
 import org.lwjgl.glfw.GLFW;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -712,7 +714,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
         boolean isNaN = Double.isNaN(rawBase) || Double.isNaN(rawFinal);
 
-        java.util.function.Function<Double, String> fmtPct = (d) -> {
+        Function<Double, String> fmtPct = (d) -> {
             if (Math.abs(d - Math.round(d)) < 0.01) {
                 return String.format("%d%%", (int) Math.round(d));
             }
@@ -1029,19 +1031,19 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                     try {
                         String rawPath = rawId.getPath().toLowerCase(Locale.ROOT);
                         if (rawPath.contains("set_bonus")) {
-                            List<net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack> sourced = new ArrayList<>();
+                            List<EquipmentSet.SourcedItemStack> sourced = new ArrayList<>();
 
                             for (EquipmentSlot slot :  EquipmentSlot.values()) {
                                 ItemStack s = player.getItemBySlot(slot);
                                 if (s != null && !s.isEmpty()) {
-                                    sourced.add(new net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack(s, slot.getName()));
+                                    sourced.add(new EquipmentSet.SourcedItemStack(s, slot.getName()));
                                 }
                             }
 
                             if (TrinketsCompat.isLoaded()) {
                                 try {
                                     for (var src : TrinketsCompat.getTrinketModifierSources(player)) {
-                                        sourced.add(new net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack(src.stack(), "trinket"));
+                                        sourced.add(new EquipmentSet.SourcedItemStack(src.stack(), "trinket"));
                                     }
                                 } catch (Exception ignored) {}
                             }
@@ -1049,12 +1051,12 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                             if (CuriosCompat.isLoaded()) {
                                 try {
                                     for (var src : CuriosCompat.getCurioModifierSources(player)) {
-                                        sourced.add(new net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack(src.stack(), "curio"));
+                                        sourced.add(new EquipmentSet.SourcedItemStack(src.stack(), "curio"));
                                     }
                                 } catch (Exception ignored) {}
                             }
 
-                            var results = net.spell_engine.api.item.set.EquipmentSet.collectFrom(sourced, player.level());
+                            var results = EquipmentSet.collectFrom(sourced, player.level());
 
                             for (var res : results) {
                                 var setEntry = res.set();
@@ -1069,7 +1071,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
                                             Component setNameText;
                                             try {
-                                                String tkey = net.spell_engine.api.item.set.EquipmentSet.translationKey(setEntry);
+                                                String tkey = EquipmentSet.translationKey(setEntry);
                                                 setNameText = Component.translatable(tkey);
                                                 if (setNameText.getString().equals(tkey)) {
                                                     String rawDefName = setEntry.value().name();

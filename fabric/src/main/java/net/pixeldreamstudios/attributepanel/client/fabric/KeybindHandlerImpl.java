@@ -6,6 +6,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.pixeldreamstudios.attributepanel.api.AttributePanelAPI;
+import net.pixeldreamstudios.attributepanel.client.KeybindHandler;
 import org.lwjgl.glfw.GLFW;
 
 public class KeybindHandlerImpl {
@@ -18,7 +19,7 @@ public class KeybindHandlerImpl {
                 "key.categories.kevs_attributes_panel"
         ));
 
-        net.pixeldreamstudios.attributepanel.client.KeybindHandler.setQuickOpenKeybind(quickOpenKeybind);
+        KeybindHandler.setQuickOpenKeybind(quickOpenKeybind);
 
         ClientTickEvents.END_CLIENT_TICK.register((client) -> {
             while (quickOpenKeybind.consumeClick()) {

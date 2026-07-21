@@ -21,6 +21,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.EnchantedBookItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -28,6 +29,7 @@ import net.minecraft.world.item.enchantment.EnchantmentInstance;
 import net.pixeldreamstudios.attributepanel.compat.CuriosCompat;
 import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
 import net.pixeldreamstudios.attributepanel.compat.TrinketsCompat;
+import net.spell_engine.api.item.set.EquipmentSet;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.*;
@@ -490,7 +492,7 @@ class BookAttributePanelDrawable {
                     if (pathParts.length > 0) {
                         ResourceLocation guess = ResourceLocation.fromNamespaceAndPath(rawId.getNamespace(), pathParts[pathParts.length - 1]);
                         if (BuiltInRegistries.ITEM.containsKey(guess)) {
-                            net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(guess);
+                            Item item = BuiltInRegistries.ITEM.get(guess);
                             iconStack = new ItemStack(item);
                             displayName = iconStack.getHoverName().copy().withStyle(iconStack.getRarity().color());
                             foundSource = true;
@@ -502,19 +504,19 @@ class BookAttributePanelDrawable {
                     try {
                         String rawPath = rawId.getPath().toLowerCase(Locale.ROOT);
                         if (rawPath.contains("set_bonus")) {
-                            List<net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack> sourced = new ArrayList<>();
+                            List<EquipmentSet.SourcedItemStack> sourced = new ArrayList<>();
 
                             for (EquipmentSlot slot :  EquipmentSlot.values()) {
                                 ItemStack s = player.getItemBySlot(slot);
                                 if (s != null && !s.isEmpty()) {
-                                    sourced.add(new net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack(s, slot.getName()));
+                                    sourced.add(new EquipmentSet.SourcedItemStack(s, slot.getName()));
                                 }
                             }
 
                             if (TrinketsCompat.isLoaded()) {
                                 try {
                                     for (var src : TrinketsCompat.getTrinketModifierSources(player)) {
-                                        sourced.add(new net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack(src.stack(), "trinket"));
+                                        sourced.add(new EquipmentSet.SourcedItemStack(src.stack(), "trinket"));
                                     }
                                 } catch (Exception ignored) {}
                             }
@@ -522,12 +524,12 @@ class BookAttributePanelDrawable {
                             if (CuriosCompat.isLoaded()) {
                                 try {
                                     for (var src : CuriosCompat.getCurioModifierSources(player)) {
-                                        sourced.add(new net.spell_engine.api.item.set.EquipmentSet.SourcedItemStack(src.stack(), "curio"));
+                                        sourced.add(new EquipmentSet.SourcedItemStack(src.stack(), "curio"));
                                     }
                                 } catch (Exception ignored) {}
                             }
 
-                            var results = net.spell_engine.api.item.set.EquipmentSet.collectFrom(sourced, player.level());
+                            var results = EquipmentSet.collectFrom(sourced, player.level());
 
                             for (var res : results) {
                                 var setEntry = res.set();
@@ -542,7 +544,7 @@ class BookAttributePanelDrawable {
 
                                             Component setNameText;
                                             try {
-                                                String tkey = net.spell_engine.api.item.set.EquipmentSet.translationKey(setEntry);
+                                                String tkey = EquipmentSet.translationKey(setEntry);
                                                 setNameText = Component.translatable(tkey);
                                                 if (setNameText.getString().equals(tkey)) {
                                                     String rawDefName = setEntry.value().name();

@@ -46,6 +46,9 @@ dependencies {
     modCompileOnly "curse.maven:cloth-config-348521:5729127"
     modCompileOnly "curse.maven:accessories-938917:7583320"
     modCompileOnly "curse.maven:icon-leading-tooltip-1335640:7395668"
+
+    // Tiered More (Architectury build) — local jar until the new arch version is published on CurseForge.
+    modCompileOnly name: 'tiered_more-neoforge-1.2.1'
 }
 
 processResources {

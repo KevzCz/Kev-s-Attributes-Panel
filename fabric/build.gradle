@@ -48,7 +48,9 @@ dependencies {
 
     modCompileOnly "curse.maven:icon-leading-tooltip-1335640:7395672"
 
-    modCompileOnly "curse.maven:tiered-more-1275090:8362003"
+    // Tiered More (Architectury build) — local jar until the new arch version is published on CurseForge.
+    // Old ref was: modCompileOnly "curse.maven:tiered-more-1275090:8362003"
+    modCompileOnly name: 'tiered_more-fabric-1.2.1'
 }
 
 processResources {

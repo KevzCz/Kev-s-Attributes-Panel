@@ -8,6 +8,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -41,8 +42,8 @@ public class AttributeSnapshotCommandImpl {
 
     private static void registerCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
-                net.minecraft.commands.Commands.literal("attributesnapshot")
-                        .then(net.minecraft.commands.Commands.argument("target", StringArgumentType.word())
+                Commands.literal("attributesnapshot")
+                        .then(Commands.argument("target", StringArgumentType.word())
                                 .executes(ctx -> execute(ctx, StringArgumentType.getString(ctx, "target")))
                         )
         );
@@ -57,8 +58,8 @@ public class AttributeSnapshotCommandImpl {
         };
 
         dispatcher.register(
-                net.minecraft.commands.Commands.literal("attributepanel")
-                        .then(net.minecraft.commands.Commands.argument("attribute", StringArgumentType.greedyString())
+                Commands.literal("attributepanel")
+                        .then(Commands.argument("attribute", StringArgumentType.greedyString())
                                 .suggests(attributeSuggestions)
                                 .executes(ctx -> executeAttributeCheck(ctx, StringArgumentType.getString(ctx, "attribute")))
                         )
