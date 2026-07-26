@@ -103,7 +103,6 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         return expanded;
     }
 
-    /** Restore expanded state (e.g. after a screen re-init on resize) without toggling. */
     public void setExpanded(boolean expanded) {
         this.expanded = expanded;
         expandedMemory = expanded;
@@ -121,15 +120,9 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
 
     public static final int PANEL_Z_OFFSET = 300;
 
-    /**
-     * Vertical nudge applied to potion icons in tooltips. Item sprites are drawn from the top of
-     * their 16x16 frame; the potion sprite carries 2px of transparent padding above the glass (and
-     * 8px above its liquid overlay), so it reads as sitting below the text baseline. Sprites that
-     * fill their frame — swords, tools — already line up and must not be moved.
-     */
+
     public static final int POTION_ICON_Y_NUDGE = -2;
 
-    /** Icons that need {@link #POTION_ICON_Y_NUDGE} to sit level with the text. */
     protected static int iconYOffset(ItemStack icon) {
         return icon.getItem() instanceof PotionItem ? POTION_ICON_Y_NUDGE : 0;
     }
@@ -203,14 +196,12 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         return mouseX >= b[0] && mouseX <= b[0] + b[2] && mouseY >= b[1] && mouseY <= b[1] + b[3];
     }
 
-    /** @return {x, y, width, height} of the visible panel, or null if not shown. */
     public int[] getPanelBounds() {
         if (!expanded) return null;
         if (AttributesPanelConfig.INSTANCE.guiStyle != AttributesPanelConfig.GuiStyle.COMPACT) return null;
         return new int[] { left() - 16, top(), panelWidth() + 16, panelHeight() };
     }
 
-    /** Late draw for the compact panel's draggable imprint window (above item slots). */
     public void renderImprintWindowLate(GuiGraphics context) {
         if (!expanded) return;
         if (AttributesPanelConfig.INSTANCE.guiStyle == AttributesPanelConfig.GuiStyle.COMPACT) {
