@@ -1,0 +1,42 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+#issueTrackerURL = ""
+license = "MIT"
+
+[[mods]]
+modId = "kevs_attributes_panel"
+version = "${version}"
+displayName = "Kev's Attributes Panel"
+authors = "KevzCz"
+description = '''
+Adds an attribute panel!
+'''
+logoFile = "assets/kevs_attributes_panel/icon.png"
+
+[[dependencies.kevs_attributes_panel]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.kevs_attributes_panel]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.kevs_attributes_panel]]
+modId = "architectury"
+mandatory = true
+versionRange = "[9.2.14,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.kevs_attributes_panel]]
+modId = "cloth_config"
+mandatory = false
+versionRange = "*"
+ordering = "AFTER"
+side = "CLIENT"

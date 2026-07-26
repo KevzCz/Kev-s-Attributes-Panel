@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "net.pixeldreamstudios.attributepanel.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "CreativeSelectedTabAccessor",
+    "GuiGraphicsTooltipMixin",
+    "HandledScreenMixin",
+    "MouseScrollMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
