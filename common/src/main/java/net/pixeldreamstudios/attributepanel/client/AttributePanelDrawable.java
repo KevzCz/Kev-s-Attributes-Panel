@@ -27,6 +27,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.PotionItem;
 import net.minecraft.world.item.component.CustomData;
 import net.pixeldreamstudios.attributepanel.compat.CuriosCompat;
 import net.pixeldreamstudios.attributepanel.compat.TrinketsCompat;
@@ -119,6 +120,19 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
     }
 
     public static final int PANEL_Z_OFFSET = 300;
+
+    /**
+     * Vertical nudge applied to potion icons in tooltips. Item sprites are drawn from the top of
+     * their 16x16 frame; the potion sprite carries 2px of transparent padding above the glass (and
+     * 8px above its liquid overlay), so it reads as sitting below the text baseline. Sprites that
+     * fill their frame — swords, tools — already line up and must not be moved.
+     */
+    public static final int POTION_ICON_Y_NUDGE = -2;
+
+    /** Icons that need {@link #POTION_ICON_Y_NUDGE} to sit level with the text. */
+    protected static int iconYOffset(ItemStack icon) {
+        return icon.getItem() instanceof PotionItem ? POTION_ICON_Y_NUDGE : 0;
+    }
 
     public void renderLate(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!expanded) return;
@@ -285,7 +299,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
                 iconOffset = 18;
             } else if (!icon.isEmpty()) {
                 pose.pushPose();
-                pose.translate(drawX, lineY, 0);
+                pose.translate(drawX, lineY + iconYOffset(icon), 0);
                 pose.scale(0.85f, 0.85f, 1f);
                 context.renderItem(icon, 0, 0);
                 pose.popPose();
@@ -350,7 +364,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             } else if (!icon.isEmpty()) {
                 context.fill(drawX - 1, lineY - 1, drawX + 15, lineY + 15, 0x20FFAA00);
                 pose.pushPose();
-                pose.translate(drawX, lineY, 0);
+                pose.translate(drawX, lineY + iconYOffset(icon), 0);
                 pose.scale(0.85f, 0.85f, 1f);
                 context.renderItem(icon, 0, 0);
                 pose.popPose();
