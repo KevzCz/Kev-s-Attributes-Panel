@@ -29,7 +29,7 @@ Thumbs.db
 **/run/
 **/logs/
 **/crash-reports/
-**/config/
+run/config/
 **/mods/
 
 # If you *do* want config committed, delete the **/config/ line above.
