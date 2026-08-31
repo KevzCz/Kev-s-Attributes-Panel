@@ -1,4 +1,5 @@
 plugins {
+    id "me.modmuss50.mod-publish-plugin" version "2.1.1"
     id 'com.gradleup.shadow'
 }
 
@@ -62,4 +63,55 @@ shadowJar {
 
 remapJar {
     inputFile.set shadowJar.archiveFile
+}
+
+publishMods {
+    dryRun = gradle.startParameter.taskNames.any { it.contains("publishModsDry") }
+
+    file = tasks.remapJar.archiveFile
+    displayName = "Kev's Attributes Panel [FORGE] [${rootProject.minecraft_version}] - [${project.version}]"
+    type = STABLE
+    modLoaders.add("forge")
+
+    def changelogFile = rootProject.file("CHANGELOG.md")
+    def changelogText = changelogFile.exists() ? changelogFile.text : ""
+    changelog = changelogText.trim().isEmpty() ? "No changelog provided." : changelogText
+
+    curseforge {
+        projectId = "1262605"
+        projectSlug = "kevs-attributes-panel"
+        accessToken = providers.gradleProperty("cfToken")
+            .orElse(providers.environmentVariable("CF_TOKEN"))
+        minecraftVersions.add("1.20.1")
+        javaVersions.add(JavaVersion.VERSION_17)
+        clientRequired = true
+        serverRequired = true
+    }
+
+    modrinth {
+        projectId = "1hQgsACh"
+        accessToken = providers.gradleProperty("modrinthToken")
+            .orElse(providers.environmentVariable("MODRINTH_TOKEN"))
+        minecraftVersions.add("1.20.1")
+        environment = CLIENT_AND_SERVER
+    }
+}
+
+tasks.register("publishModsDry", Copy) {
+    group = "upload"
+    description = "Dry run of publishMods - writes to build/unified-dry/ instead of uploading."
+
+    def publishTasks = tasks.withType(me.modmuss50.mpp.PublishModTask)
+    dependsOn publishTasks
+
+    from(publishTasks.collect { it.dryRunDirectory }) {
+        include "**/*.jar"
+    }
+    into rootProject.layout.buildDirectory.dir("unified-dry")
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+tasks.named("publishMods") { group = "upload" }
+tasks.withType(me.modmuss50.mpp.PublishModTask).configureEach {
+    group = "upload"
 }

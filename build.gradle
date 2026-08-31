@@ -103,3 +103,9 @@ subprojects {
         }
     }
 }
+
+tasks.register("publishModsDry") {
+    group = "upload"
+    description = "Dry run publishing for every loader - writes to build/unified-dry/."
+    dependsOn ":fabric:publishModsDry", ":forge:publishModsDry"
+}
