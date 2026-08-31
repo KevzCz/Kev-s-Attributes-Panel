@@ -1845,7 +1845,9 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             String q = searchText.trim().toLowerCase(Locale.ROOT);
 
             AttributesPanelConfig.CompactSettings finalCfg = cfg;
+            List<Pattern> searchBlacklist = compilePatterns(cfg.globalBlacklist);
             stats = stats.stream()
+                    .filter(se -> !matchesAny(searchBlacklist, BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value())))
                     .filter(se -> {
                         String name = se.name().getString().toLowerCase(Locale.ROOT);
                         ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value());

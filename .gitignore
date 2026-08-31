@@ -48,3 +48,5 @@ replay_*.log
 classes/
 bin/
 *.launch
+lib-fabric.lnk
+lib - neoforge.lnk
