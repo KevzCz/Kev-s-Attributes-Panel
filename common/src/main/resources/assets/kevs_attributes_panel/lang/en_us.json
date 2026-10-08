@@ -37,6 +37,10 @@
   "attributepanel.tooltip.indirect_decrease": "➤ Indirect decrease: -%s",
   "attributepanel.tooltip.calculated": "Calculated:",
   "attributepanel.tooltip.button": "Attributes Panel",
+  "attributepanel.effects.header": "Effects",
+  "attributepanel.effects.duration": "Duration: %s",
+  "attributepanel.effects.emi_hint": "Left-click: View in EMI",
+  "attributepanel.effects.jump_hint": "Right-click: Jump to attribute",
 
   "description.attribute.name.generic.trident_damage_multiplier": "Increases your Trident Damage",
   "description.attribute.name.generic.pet_damage_bonus": "Bonus damage for pets when Pet Inheritance procs",

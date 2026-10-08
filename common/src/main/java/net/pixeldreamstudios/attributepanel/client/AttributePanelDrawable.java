@@ -166,6 +166,15 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         if (b == null) return false;
         return mouseX >= b[0] && mouseX <= b[0] + b[2] && mouseY >= b[1] && mouseY <= b[1] + b[3];
     }
+    public boolean wantsKeys() {
+        return expanded && compactGui.wantsKeys();
+    }
+
+    public MobEffect getEffectAt(double mouseX, double mouseY) {
+        if (!expanded) return null;
+        return compactGui.getEffectAt(mouseX, mouseY);
+    }
+
     public int[] getPanelBounds() {
         if (!expanded) return null;
         return new int[] { left() - 16, top(), panelWidth() + 16, panelHeight() };

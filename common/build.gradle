@@ -17,4 +17,6 @@ dependencies {
     modCompileOnly "curse.maven:trinkets-341284:5173501"
     modCompileOnly "curse.maven:curios-309927:6418456"
     modCompileOnly "curse.maven:accessories-938917:7164886"
+
+    modCompileOnly "dev.emi:emi-xplat-intermediary:$rootProject.emi_version:api"
 }

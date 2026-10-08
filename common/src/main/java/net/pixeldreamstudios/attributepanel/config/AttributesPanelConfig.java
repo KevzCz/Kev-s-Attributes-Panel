@@ -177,6 +177,10 @@ public class AttributesPanelConfig {
         public String bonusesHeaderName = "Bonuses";
         public String bonusesHeaderIcon = null;
 
+        public boolean showEffectsHeader = false;
+        public String effectsHeaderName = "Effects";
+        public String effectsHeaderIcon = null;
+
         public int sidePadding = 15;
         public float textScale = 0.55f;
 
@@ -227,6 +231,9 @@ public class AttributesPanelConfig {
             s.otherHeaderIcon = null;
             s.bonusesHeaderName = "Bonuses";
             s.bonusesHeaderIcon = null;
+            s.showEffectsHeader = false;
+            s.effectsHeaderName = "Effects";
+            s.effectsHeaderIcon = null;
             s.globalBlacklist = new ArrayList<>();
 
             s.disableOtherHeader = false;

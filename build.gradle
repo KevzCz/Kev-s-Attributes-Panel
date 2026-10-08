@@ -44,7 +44,10 @@ subprojects {
         }
         maven {
             url "https://maven.terraformersmc.com/"
-            content { includeGroupByRegex "com\\.terraformersmc.*" }
+            content {
+                includeGroupByRegex "com\\.terraformersmc.*"
+                includeGroupByRegex "dev\\.emi.*"
+            }
         }
         maven {
             name = "Ladysnake Libs"
