@@ -3,6 +3,7 @@ package net.pixeldreamstudios.attributepanel.client;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.ChatFormatting;
+import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -11,16 +12,23 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffectUtil;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -29,10 +37,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
 import net.pixeldreamstudios.attributepanel.compat.AccessoriesCompat;
 import net.pixeldreamstudios.attributepanel.compat.CuriosCompat;
+import net.pixeldreamstudios.attributepanel.compat.EmiCompat;
 import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
 import net.pixeldreamstudios.attributepanel.compat.TieredMoreCompat;
 import net.pixeldreamstudios.attributepanel.compat.TrinketsCompat;
@@ -134,6 +144,24 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     private static final int IMPRINT_WIN_SCROLL_STEP = 12;
     private int lastMouseX = 0, lastMouseY = 0;
     private List<TieredMoreCompat.ImprintState> pendingImprintTooltip = null;
+
+    private static final int EFFECT_DESC_WRAP_W = 180;
+    private static final float EFFECT_DURATION_FACTOR = 1.0f;
+    private static final String[] EFFECT_DESC_SUFFIXES = {".description", ".desc"};
+    private static final int HIGHLIGHT_PAD_TOP = 2;
+    private static final int HIGHLIGHT_PAD_BOTTOM = 1;
+    private static final long EFFECT_FLASH_MS = 1200L;
+    private static final int EFFECT_FLASH_PULSES = 2;
+    private final List<EffectHit> effectHits = new ArrayList<>();
+    private final Set<Attribute> effectHighlightedAttrs = new HashSet<>();
+    private final Set<Attribute> flashAttrs = new HashSet<>();
+    private long flashStartMs = 0L;
+
+    private record EffectHit(MobEffectInstance instance, int x0, int y0, int x1, int y1) {
+        boolean contains(double mx, double my) {
+            return mx >= x0 && mx <= x1 && my >= y0 && my < y1;
+        }
+    }
 
     private static class TooltipRenderData {
         List<Component> allLines;
@@ -263,6 +291,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         ctx.blit(BACKGROUND_TEXTURE, bgX, bgY, 0, 0, bgW, bgH, bgW, bgH);
 
         buildLayout();
+        effectHits.clear();
+        effectHighlightedAttrs.clear();
 
         int padX = sidePadding();
         int innerX = bgX + padX;
@@ -413,12 +443,35 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             switch (it.type) {
                 case DIVIDER -> drawDivider(ctx, innerX, innerW, y);
                 case HEADER -> drawHeader(ctx, font, innerX, innerW, y, it.header);
-                case STAT -> {
-                    boolean isHovered = mouseX >= innerX && mouseX <= innerX + innerW &&
-                            mouseY >= y && mouseY <= y + ROW_H_TEXT;
-                    
-                    if (isHovered && AttributesPanelConfig.INSTANCE.compact.statHoverEffect) {
+                case EFFECT -> {
+                    int hitY0 = Math.max(rowHitTop(y), innerY);
+                    int hitY1 = rowHitTop(y) + ROW_H_TEXT;
+                    effectHits.add(new EffectHit(it.effect, innerX, hitY0, innerX + innerW, hitY1));
+
+                    boolean isHovered = isRowHovered(mouseX, mouseY, innerX, innerW, y);
+
+                    if (isHovered) {
                         drawStatHoverEffect(ctx, innerX, innerW, y);
+                        collectEffectAttributes(it.effect, effectHighlightedAttrs);
+                    }
+
+                    drawEffect(ctx, font, innerX, innerW, y, it.effect);
+
+                    if (isHovered) {
+                        showEffectTooltip(font, it.effect, mouseX, mouseY);
+                    }
+                }
+                case STAT -> {
+                    boolean isHovered = isRowHovered(mouseX, mouseY, innerX, innerW, y);
+                    Attribute rowAttr = it.stat.stat.attribute().value();
+                    boolean effectLinked = effectHighlightedAttrs.contains(rowAttr);
+                    float flash = flashStrength(rowAttr);
+
+                    if (effectLinked || (isHovered && AttributesPanelConfig.INSTANCE.compact.statHoverEffect)) {
+                        drawStatHoverEffect(ctx, innerX, innerW, y);
+                    }
+                    if (flash > 0f) {
+                        drawRowFlash(ctx, innerX, innerW, y, flash);
                     }
                     
                     drawStat(ctx, font, innerX, y, it.stat);
@@ -498,7 +551,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         NameSplit split = splitLeadingIcon(rawName);
 
         final int iconLeft = innerX;
-        final int rowY0 = y, rowY1 = y + ROW_H_TEXT;
+        final int rowY0 = rowHitTop(y), rowY1 = rowY0 + ROW_H_TEXT - 1;
 
         float fs = fontScale();
         int iconW = iconColW();
@@ -1471,8 +1524,69 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
         root.enqueueTooltipRich(lines, icons, texIcons, mouseX, mouseY);
     }
+    private MobEffectInstance getEffectInstanceAt(double mouseX, double mouseY) {
+        for (EffectHit hit : effectHits) {
+            if (hit.contains(mouseX, mouseY)) return hit.instance();
+        }
+        return null;
+    }
+
+    public MobEffect getEffectAt(double mouseX, double mouseY) {
+        MobEffectInstance instance = getEffectInstanceAt(mouseX, mouseY);
+        return instance == null ? null : instance.getEffect().value();
+    }
+
+    private boolean handleEffectClick(double mouseX, double mouseY, int button) {
+        MobEffectInstance instance = getEffectInstanceAt(mouseX, mouseY);
+        if (instance == null) return false;
+        return switch (button) {
+            case GLFW.GLFW_MOUSE_BUTTON_LEFT -> EmiCompat.showEffectRecipes(instance.getEffect().value());
+            case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> jumpToEffectAttribute(instance);
+            default -> false;
+        };
+    }
+
+    private int firstLinkedStatIndex(Set<Attribute> linked) {
+        if (linked.isEmpty()) return -1;
+        for (int i = 0; i < items.size(); i++) {
+            Item it = items.get(i);
+            if (it.type == ItemType.STAT && linked.contains(it.stat.stat.attribute().value())) return i;
+        }
+        return -1;
+    }
+
+    private boolean jumpToEffectAttribute(MobEffectInstance instance) {
+        Set<Attribute> linked = new HashSet<>();
+        collectEffectAttributes(instance, linked);
+
+        int target = firstLinkedStatIndex(linked);
+        if (target < 0) return false;
+
+        int innerH = Math.max(0, root.panelHeight() - (PADDING_TOP + PADDING_BOTTOM));
+        int maxOffset = Math.max(0, totalContentHeight() - innerH);
+        int centered = prefixAt(target) - (innerH - ROW_H_TEXT) / 2;
+        scrollPx = Math.max(0, Math.min(centered, maxOffset));
+
+        flashAttrs.clear();
+        flashAttrs.addAll(linked);
+        flashStartMs = System.currentTimeMillis();
+        return true;
+    }
+
+    private float flashStrength(Attribute attr) {
+        if (flashAttrs.isEmpty() || !flashAttrs.contains(attr)) return 0f;
+        long elapsed = System.currentTimeMillis() - flashStartMs;
+        if (elapsed >= EFFECT_FLASH_MS) {
+            flashAttrs.clear();
+            return 0f;
+        }
+        float t = (float) elapsed / EFFECT_FLASH_MS;
+        return (1f - t) * Math.abs((float) Math.cos(Math.PI * EFFECT_FLASH_PULSES * t));
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) return handleEffectClick(mouseX, mouseY, button);
         if (button != 0) return false;
 
         if (imprintWindowOpen) {
@@ -1525,6 +1639,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                 setFocused(false);
             }
         }
+
+        if (handleEffectClick(mouseX, mouseY, button)) return true;
 
         BarGeom g = computeBarGeom();
         if (!g.visible) return false;
@@ -1904,6 +2020,27 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         Set<ResourceLocation> assigned = new HashSet<>();
 
         boolean firstSection = true;
+
+        if (cfg.showEffectsHeader) {
+            List<MobEffectInstance> effects = activeEffects();
+            if (!effects.isEmpty()) {
+                firstSection = false;
+
+                HeaderLayout effectsHeader = new HeaderLayout();
+                effectsHeader.headerText = (cfg.effectsHeaderName == null || cfg.effectsHeaderName.isBlank())
+                        ? Component.translatable("attributepanel.effects.header").getString()
+                        : cfg.effectsHeaderName;
+                effectsHeader.headerIcon = tryIdentifier(cfg.effectsHeaderIcon);
+                effectsHeader.perAttrIcon = Collections.emptyMap();
+                effectsHeader.stats = Collections.emptyList();
+
+                items.add(Item.header(effectsHeader));
+                for (MobEffectInstance instance : effects) {
+                    items.add(Item.effect(instance));
+                }
+            }
+        }
+
         for (var headerDef : cfg.headers) {
             HeaderLayout headerLayout = resolveHeader(headerDef, byId, globalBlacklist, assigned);
 
@@ -2261,18 +2398,55 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     }
 
     private void drawStatHoverEffect(GuiGraphics ctx, int innerX, int innerW, int y) {
+        drawStatHoverEffect(ctx, innerX, innerW, y, 1f);
+    }
+
+    private void drawStatHoverEffect(GuiGraphics ctx, int innerX, int innerW, int y, float strength) {
+        int textH = (int) Math.ceil(root.mc().font.lineHeight * fontScale());
+        int boxH = Math.min(textH + HIGHLIGHT_PAD_TOP + HIGHLIGHT_PAD_BOTTOM, ROW_H_TEXT - 1);
+
         int x0 = innerX - 1;
         int x1 = innerX + innerW + 1;
-        int y0 = y - 1;
-        int y1 = y + ROW_H_TEXT + 1;
-        
-        ctx.fillGradient(x0, y0, x1, y1, 0x20FFAA00, 0x10FFAA00);
-        
-        ctx.fill(x0, y0, x1, y0 + 1, 0x60FFD700);
-        ctx.fill(x0, y1 - 1, x1, y1, 0x40FFD700);
-        
-        ctx.fillGradient(x0, y0, x0 + 1, y1, 0x50FFAA00, 0x20FFAA00);
-        ctx.fillGradient(x1 - 1, y0, x1, y1, 0x50FFAA00, 0x20FFAA00);
+        int y0 = y - HIGHLIGHT_PAD_TOP;
+        int y1 = y0 + boxH;
+
+        ctx.fillGradient(x0, y0, x1, y1, scaleAlpha(0x20FFAA00, strength), scaleAlpha(0x10FFAA00, strength));
+
+        ctx.fill(x0, y0, x1, y0 + 1, scaleAlpha(0x60FFD700, strength));
+        ctx.fill(x0, y1 - 1, x1, y1, scaleAlpha(0x40FFD700, strength));
+
+        ctx.fillGradient(x0, y0, x0 + 1, y1, scaleAlpha(0x50FFAA00, strength), scaleAlpha(0x20FFAA00, strength));
+        ctx.fillGradient(x1 - 1, y0, x1, y1, scaleAlpha(0x50FFAA00, strength), scaleAlpha(0x20FFAA00, strength));
+    }
+
+    private static int rowHitTop(int y) {
+        return y - HIGHLIGHT_PAD_TOP;
+    }
+
+    private static boolean isRowHovered(int mouseX, int mouseY, int innerX, int innerW, int y) {
+        int top = rowHitTop(y);
+        return mouseX >= innerX && mouseX <= innerX + innerW && mouseY >= top && mouseY < top + ROW_H_TEXT;
+    }
+
+    private void drawRowFlash(GuiGraphics ctx, int innerX, int innerW, int y, float strength) {
+        int textH = (int) Math.ceil(root.mc().font.lineHeight * fontScale());
+        int boxH = Math.min(textH + HIGHLIGHT_PAD_TOP + HIGHLIGHT_PAD_BOTTOM, ROW_H_TEXT - 1);
+
+        int x0 = innerX - 1;
+        int x1 = innerX + innerW + 1;
+        int y0 = y - HIGHLIGHT_PAD_TOP;
+        int y1 = y0 + boxH;
+
+        ctx.fill(x0, y0, x1, y1, scaleAlpha(0x70FFF2B0, strength));
+        ctx.fill(x0, y0, x1, y0 + 1, scaleAlpha(0xFFFFE680, strength));
+        ctx.fill(x0, y1 - 1, x1, y1, scaleAlpha(0xFFFFE680, strength));
+        ctx.fill(x0, y0, x0 + 1, y1, scaleAlpha(0xFFFFE680, strength));
+        ctx.fill(x1 - 1, y0, x1, y1, scaleAlpha(0xFFFFE680, strength));
+    }
+
+    private static int scaleAlpha(int argb, float strength) {
+        int alpha = Math.round(((argb >>> 24) & 0xFF) * Math.max(0f, Math.min(1f, strength)));
+        return (alpha << 24) | (argb & 0xFFFFFF);
     }
 
     private void drawStat(GuiGraphics ctx, Font font, int innerX, int y, StatRow statRow) {
@@ -2389,6 +2563,117 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
             ctx.pose().popPose();
         }
+    }
+
+    private List<MobEffectInstance> activeEffects() {
+        Player player = root.mc().player;
+        if (player == null) return Collections.emptyList();
+
+        List<MobEffectInstance> effects = new ArrayList<>(player.getActiveEffects());
+        Collections.sort(effects);
+        return effects;
+    }
+
+    private Component effectDisplayName(MobEffectInstance instance) {
+        MutableComponent name = instance.getEffect().value().getDisplayName().copy();
+        if (instance.getAmplifier() > 0) {
+            name.append(" " + toRomanNumeral(instance.getAmplifier() + 1));
+        }
+        return name;
+    }
+
+    private Component effectDuration(MobEffectInstance instance) {
+        var level = root.mc().level;
+        float tickRate = level != null ? level.tickRateManager().tickrate() : SharedConstants.TICKS_PER_SECOND;
+        return MobEffectUtil.formatDuration(instance, EFFECT_DURATION_FACTOR, tickRate);
+    }
+
+    private void collectEffectAttributes(MobEffectInstance instance, Set<Attribute> out) {
+        instance.getEffect().value().createModifiers(instance.getAmplifier(), (attr, mod) -> out.add(attr.value()));
+    }
+
+    private void drawEffect(GuiGraphics ctx, Font font, int innerX, int innerW, int y, MobEffectInstance instance) {
+        float fs = fontScale();
+
+        int iconDrawW = Math.round(ATTR_ICON_SIZE * fs);
+        int iconX = innerX + Math.max(0, (iconColW() - iconDrawW) / 2);
+        TextureAtlasSprite sprite = root.mc().getMobEffectTextures().get(instance.getEffect());
+        ctx.blit(iconX, y - 1, 0, iconDrawW, iconDrawW, sprite);
+
+        String duration = effectDuration(instance).getString();
+        int durationW = (int) Math.ceil(font.width(duration) * fs);
+        int spaceW = (int) Math.ceil(font.width(" ") * fs);
+        int nameLeft = innerX + iconColW() + ICON_VALUE_GAP;
+        int durationLeft = innerX + innerW - durationW;
+        int maxNameW = Math.max(0, durationLeft - spaceW - nameLeft);
+        String name = font.plainSubstrByWidth(effectDisplayName(instance).getString(), (int) (maxNameW / fs));
+
+        ctx.pose().pushPose();
+        ctx.pose().scale(fs, fs, 1f);
+        int drawY = (int) (y / fs);
+        ctx.drawString(font, name, (int) (nameLeft / fs), drawY, colorBody(), true);
+        ctx.drawString(font, duration, (int) (durationLeft / fs), drawY, colorMuted(), true);
+        ctx.pose().popPose();
+    }
+
+    private void showEffectTooltip(Font font, MobEffectInstance instance, int mouseX, int mouseY) {
+        MobEffect effect = instance.getEffect().value();
+        List<Component> lines = new ArrayList<>();
+
+        lines.add(effectDisplayName(instance).copy().withStyle(effect.getCategory().getTooltipFormatting()));
+        lines.add(Component.translatable("attributepanel.effects.duration", effectDuration(instance))
+                .withStyle(ChatFormatting.GRAY));
+
+        String descKey = effectDescriptionKey(effect);
+        if (descKey != null) {
+            lines.add(Component.empty());
+            for (FormattedText part : font.getSplitter().splitLines(Component.translatable(descKey), EFFECT_DESC_WRAP_W, Style.EMPTY)) {
+                lines.add(Component.literal(part.getString()).withStyle(ChatFormatting.GRAY));
+            }
+        }
+
+        List<Component> modifierLines = new ArrayList<>();
+        effect.createModifiers(instance.getAmplifier(), (attr, mod) -> modifierLines.add(formatEffectModifier(attr, mod)));
+        if (!modifierLines.isEmpty()) {
+            lines.add(Component.empty());
+            lines.add(Component.translatable("attributepanel.message.modifiers").withStyle(ChatFormatting.YELLOW));
+            lines.addAll(modifierLines);
+        }
+
+        List<Component> hintLines = new ArrayList<>();
+        if (EmiCompat.hasEffectEntry(effect)) {
+            hintLines.add(Component.translatable("attributepanel.effects.emi_hint").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        Set<Attribute> linked = new HashSet<>();
+        collectEffectAttributes(instance, linked);
+        if (firstLinkedStatIndex(linked) >= 0) {
+            hintLines.add(Component.translatable("attributepanel.effects.jump_hint").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        if (!hintLines.isEmpty()) {
+            lines.add(Component.empty());
+            lines.addAll(hintLines);
+        }
+
+        root.enqueueTooltip(lines, new ArrayList<>(Collections.nCopies(lines.size(), ItemStack.EMPTY)), mouseX, mouseY);
+    }
+
+    private static String effectDescriptionKey(MobEffect effect) {
+        Language language = Language.getInstance();
+        for (String suffix : EFFECT_DESC_SUFFIXES) {
+            String key = effect.getDescriptionId() + suffix;
+            if (language.has(key)) return key;
+        }
+        return null;
+    }
+
+    private static Component formatEffectModifier(Holder<Attribute> attr, AttributeModifier mod) {
+        double amount = mod.amount();
+        double shown = mod.operation() == AttributeModifier.Operation.ADD_VALUE ? amount : amount * 100.0;
+        String key = (amount >= 0 ? "attribute.modifier.plus." : "attribute.modifier.take.") + mod.operation().id();
+        return Component.translatable(key,
+                        ItemAttributeModifiers.ATTRIBUTE_MODIFIER_FORMAT.format(Math.abs(shown)),
+                        Component.translatable(attr.value().getDescriptionId()))
+                .withStyle(attr.value().getStyle(amount >= 0));
     }
 
     private static final class NameSplit {
@@ -2558,7 +2843,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     }
 
     private enum ItemType {
-        DIVIDER, HEADER, STAT
+        DIVIDER, HEADER, STAT, EFFECT
     }
 
     private static class Item {
@@ -2566,6 +2851,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         final int height;
         HeaderLayout header;
         StatRow stat;
+        MobEffectInstance effect;
 
         private Item(ItemType t, int height) {
             this.type = t;
@@ -2603,6 +2889,12 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         static Item statBonusBullet(StatEntry se) {
             Item it = new Item(ItemType.STAT, ROW_H_TEXT);
             it.stat = new StatRow(se, null, true, true);
+            return it;
+        }
+
+        static Item effect(MobEffectInstance instance) {
+            Item it = new Item(ItemType.EFFECT, ROW_H_TEXT);
+            it.effect = instance;
             return it;
         }
     }

@@ -28,6 +28,9 @@
     ],
     "modmenu": [
       "net.pixeldreamstudios.attributepanel.config.fabric.ModMenuIntegration"
+    ],
+    "emi": [
+      "net.pixeldreamstudios.attributepanel.compat.emi.KapEmiPlugin"
     ]
   },
   "mixins": [

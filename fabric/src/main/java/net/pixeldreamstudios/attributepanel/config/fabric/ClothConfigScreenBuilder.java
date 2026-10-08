@@ -247,6 +247,26 @@ public class ClothConfigScreenBuilder {
                 .setSaveConsumer(v -> safeSettings().disableBonusesHeader = v)
                 .build());
 
+        compactSC.add(eb.startBooleanToggle(Component.literal("Show \"Effects\" header"),
+                        safeSettings().showEffectsHeader)
+                .setDefaultValue(false)
+                .setTooltip(Component.literal("Lists your active effects at the top of the panel. Hidden when no effects are active."))
+                .setSaveConsumer(v -> safeSettings().showEffectsHeader = v)
+                .build());
+
+        compactSC.add(eb.startStrField(Component.literal("Effects header name"),
+                        nullToEmpty(safeSettings().effectsHeaderName))
+                .setDefaultValue("Effects")
+                .setTooltip(Component.literal("Title used for the group that lists active effects."))
+                .setSaveConsumer(v -> safeSettings().effectsHeaderName = emptyToNull(trimOrNull(v)))
+                .build());
+
+        compactSC.add(eb.startStrField(Component.literal("Effects header icon (optional)"),
+                        nullToEmpty(safeSettings().effectsHeaderIcon))
+                .setTooltip(Component.literal("Texture path like modid:textures/gui/effects.png; leave blank for none."))
+                .setSaveConsumer(v -> safeSettings().effectsHeaderIcon = emptyToNull(trimOrNull(v)))
+                .build());
+
         compactSC.add(eb.startStrList(Component.literal("Global blacklist (globs)"),
                         new ArrayList<>(safeSettings().globalBlacklist))
                 .setTooltip(Component.literal("Any matching attributes are hidden entirely."))
