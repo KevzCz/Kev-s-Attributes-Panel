@@ -24,7 +24,7 @@ import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -34,12 +34,12 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.pixeldreamstudios.attributepanel.compat.AccessoriesCompat;
 import net.pixeldreamstudios.attributepanel.compat.CuriosCompat;
 import net.pixeldreamstudios.attributepanel.compat.EmiCompat;
@@ -83,16 +83,16 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     private static final float SCROLLBAR_W = 3.15f;
     private static final int SCROLL_STEP_PX = 18;
 
-    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/gui.png");
-    private static final ResourceLocation DIVIDER_TEXTURE = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/divider.png");
-    private static final ResourceLocation PERMA = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/perma.png");
-    private static final ResourceLocation EQUIPPED = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/equipped.png");
-    private static final ResourceLocation DD_POWER_ICON = ResourceLocation.fromNamespaceAndPath("dungeon_difficulty", "textures/symbol/power_level.png");
-    private static final ResourceLocation FTB_QUEST_BOOK_ICON = ResourceLocation.fromNamespaceAndPath("ftbquests", "textures/item/book.png");
-    private static final ResourceLocation INFO_ICON = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/info.png");
-    private static final ResourceLocation CHANGED = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/changed.png");
+    private static final Identifier BACKGROUND_TEXTURE = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/gui.png");
+    private static final Identifier DIVIDER_TEXTURE = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/divider.png");
+    private static final Identifier PERMA = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/perma.png");
+    private static final Identifier EQUIPPED = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/equipped.png");
+    private static final Identifier DD_POWER_ICON = Identifier.fromNamespaceAndPath("dungeon_difficulty", "textures/symbol/power_level.png");
+    private static final Identifier FTB_QUEST_BOOK_ICON = Identifier.fromNamespaceAndPath("ftbquests", "textures/item/book.png");
+    private static final Identifier INFO_ICON = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/info.png");
+    private static final Identifier CHANGED = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/changed.png");
     private static final int INFO_ICON_SIZE = 12;
-    private static final ResourceLocation SEARCH_ICON = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/search.png");
+    private static final Identifier SEARCH_ICON = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/search.png");
     private static final int SEARCH_ICON_SIZE = 12;
     private boolean searchVisible = false;
     private boolean searchFocused = false;
@@ -357,13 +357,13 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
             int headerFill = 0xFF000000 | (imprints.get(0).plateColorRgb() & 0xFFFFFF);
 
-            ctx.pose().pushPose();
-            ctx.pose().translate(plateX, plateY, 0f);
-            ctx.pose().scale(headerScale, headerScale, 1f);
+            ctx.pose().pushMatrix();
+            ctx.pose().translate(plateX, plateY);
+            ctx.pose().scale(headerScale, headerScale);
 
             drawImprintPlate(ctx, 0, 0, plateW, IMPRINTS_PLATE_H, plateLabel,
                     headerFill, 1.0f, false);
-            ctx.pose().popPose();
+            ctx.pose().popMatrix();
         } else {
             imprintWindowOpen = false;
             draggingImprintWindow = false;
@@ -519,7 +519,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         }
     }
 
-    private ResourceLocation resolveAttrIcon(ResourceLocation attrId, AttributesPanelConfig.CompactSettings cfg) {
+    private Identifier resolveAttrIcon(Identifier attrId, AttributesPanelConfig.CompactSettings cfg) {
         if (attrId == null || cfg == null) return null;
 
         for (var headerDef : cfg.headers) {
@@ -528,7 +528,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             for (var spec : headerDef.attributes) {
                 if (spec == null || spec.id == null || spec.id.isBlank()) continue;
 
-                ResourceLocation icon = tryIdentifier(spec.icon);
+                Identifier icon = tryIdentifier(spec.icon);
                 if (icon == null) continue;
 
                 if (spec.id.contains("*")) {
@@ -536,7 +536,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                         return icon;
                     }
                 } else {
-                    ResourceLocation id = tryIdentifier(spec.id);
+                    Identifier id = tryIdentifier(spec.id);
                     if (id != null && id.equals(attrId)) {
                         return icon;
                     }
@@ -695,7 +695,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             }
         }
 
-        var defaultMods = stack.getItem().getDefaultAttributeModifiers();
+        var defaultMods = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
         for (var entry : defaultMods.modifiers()) {
             if (entry.attribute().equals(attr) &&
                     entry.modifier().operation() == mod.operation() &&
@@ -708,8 +708,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     }
 
     private boolean matchesModifierToItem(ItemStack stack, AttributeModifier mod) {
-        ResourceLocation modId = mod.id();
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier modId = mod.id();
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
 
         if (itemId == null) return false;
 
@@ -747,7 +747,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         if (player == null) return;
 
         boolean shiftDown = GLFW.glfwGetKey(
-                client.getWindow().getWindow(),
+                client.getWindow().handle(),
                 client.options.keyShift.getDefaultKey().getValue()
         ) == GLFW.GLFW_PRESS;
 
@@ -756,9 +756,9 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
         List<Component> lines = new ArrayList<>();
         List<ItemStack> icons = new ArrayList<>();
-        List<ResourceLocation> texIcons = new ArrayList<>();
+        List<Identifier> texIcons = new ArrayList<>();
 
-        ResourceLocation attrId = BuiltInRegistries.ATTRIBUTE.getKey(stat.attribute().value());
+        Identifier attrId = BuiltInRegistries.ATTRIBUTE.getKey(stat.attribute().value());
         String idStr = attrId == null ?  "" : attrId.toString();
         boolean isBase100Percent = AttributesPanelConfig.INSTANCE.percentAttributesBase100.contains(idStr);
 
@@ -839,7 +839,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                     String fullPath = rawId.getPath();
                     String[] parts = fullPath.split("/");
                     if (parts.length >= 3 && parts[parts.length - 1].contains("_")) {
-                        rawId = ResourceLocation.fromNamespaceAndPath("tiered", parts[parts.length - 1]);
+                        rawId = Identifier.fromNamespaceAndPath("tiered", parts[parts.length - 1]);
                     }
                 }
 
@@ -887,13 +887,13 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
                 String fullPath = rawId.getPath();
                 String[] idParts = fullPath.split("\\.", 2);
-                ResourceLocation modId = ResourceLocation.fromNamespaceAndPath(rawId.getNamespace(), idParts[0]);
+                Identifier modId = Identifier.fromNamespaceAndPath(rawId.getNamespace(), idParts[0]);
                 String customName = (idParts.length > 1) ? idParts[1] :  null;
                 boolean usedCustomName = false;
 
                 Component displayName = Component.literal(formatModifierId(modId));
                 ItemStack iconStack = ItemStack.EMPTY;
-                ResourceLocation texIcon = null;
+                Identifier texIcon = null;
                 boolean foundSource = false;
 
                 if (rawId.getNamespace().equals("texture")) {
@@ -908,7 +908,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                         texPathBuilder.append(".png");
 
                         String customNameFromPath = texParts[texParts.length - 1];
-                        texIcon = ResourceLocation.fromNamespaceAndPath(textureNamespace, texPathBuilder.toString());
+                        texIcon = Identifier.fromNamespaceAndPath(textureNamespace, texPathBuilder.toString());
 
                         String pretty = Arrays.stream(customNameFromPath.split("_"))
                                 .map(s -> s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1).toLowerCase(Locale.ROOT))
@@ -949,19 +949,22 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
                     if (enchKey != null && !enchKey.isBlank()) {
                         try {
-                            ResourceLocation enchId = ResourceLocation.fromNamespaceAndPath(rawId.getNamespace(), enchKey);
+                            Identifier enchId = Identifier.fromNamespaceAndPath(rawId.getNamespace(), enchKey);
 
                             if (root.mc().player != null && root.mc().player.level() != null) {
                                 var drm = root.mc().player.level().registryAccess();
-                                Registry<Enchantment> enchantmentRegistry = drm.registryOrThrow(Registries.ENCHANTMENT);
+                                Registry<Enchantment> enchantmentRegistry = drm.lookupOrThrow(Registries.ENCHANTMENT);
 
                                 ResourceKey<Enchantment> enchantKey = ResourceKey.create(Registries.ENCHANTMENT, enchId);
-                                var entryOpt = enchantmentRegistry.getHolder(enchantKey);
+                                var entryOpt = enchantmentRegistry.get(enchantKey);
 
                                 if (entryOpt.isPresent()) {
                                     var enchEntry = entryOpt.get();
                                     int lvl = Math.max(1, (int) Math.round(Math.abs(mod.amount())));
-                                    enchIconStack = EnchantedBookItem.createForEnchantment(new EnchantmentInstance(enchEntry, lvl));
+                                    enchIconStack = new ItemStack(Items.ENCHANTED_BOOK);
+                                var mut = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+                                mut.set(enchEntry, lvl);
+                                enchIconStack.set(DataComponents.STORED_ENCHANTMENTS, mut.toImmutable());
 
                                     enchDisplayName = Enchantment.getFullname(enchEntry, lvl).copy().withStyle(ChatFormatting.AQUA);
                                     enchantParsed = true;
@@ -998,7 +1001,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                     }
 
                     if (!matched[0]) {
-                        var defaultMods = stack.getItem().getDefaultAttributeModifiers();
+                        var defaultMods = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
                         for (var entry : defaultMods.modifiers()) {
                             if (entry.slot().test(slot) &&
                                     entry.modifier().id().equals(mod.id()) &&
@@ -1046,7 +1049,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
                 if (!foundSource && !"dungeon_difficulty".equals(rawId.getNamespace()) && !"morequesttypes".equals(rawId.getNamespace())) {
                     if (BuiltInRegistries.ITEM.containsKey(modId)) {
-                        net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(modId);
+                        net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(modId).orElseThrow().value();
                         iconStack = new ItemStack(item);
                         displayName = iconStack.getHoverName().copy().withStyle(iconStack.getRarity().color());
                         foundSource = true;
@@ -1055,9 +1058,9 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                     if (!foundSource) {
                         String[] pathParts = rawId.getPath().split("\\.", 2)[0].split("/");
                         if (pathParts.length > 0) {
-                            ResourceLocation guess = ResourceLocation.fromNamespaceAndPath(rawId.getNamespace(), pathParts[pathParts.length - 1]);
+                            Identifier guess = Identifier.fromNamespaceAndPath(rawId.getNamespace(), pathParts[pathParts.length - 1]);
                             if (BuiltInRegistries.ITEM.containsKey(guess)) {
-                                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(guess);
+                                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(guess).orElseThrow().value();
                                 iconStack = new ItemStack(item);
                                 displayName = iconStack.getHoverName().copy().withStyle(iconStack.getRarity().color());
                                 foundSource = true;
@@ -1070,7 +1073,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                             ItemStack stack = player.getItemBySlot(slot);
                             if (stack.isEmpty()) continue;
 
-                            ResourceLocation stackId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+                            Identifier stackId = BuiltInRegistries.ITEM.getKey(stack.getItem());
                             if (stackId != null && stackId.equals(modId)) {
                                 iconStack = stack;
                                 displayName = stack.getHoverName().copy().withStyle(stack.getRarity().color());
@@ -1114,7 +1117,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                             for (var res : results) {
                                 var setEntry = res.set();
                                 if (setEntry.unwrapKey().isPresent()) {
-                                    ResourceLocation setId = setEntry.unwrapKey().get().location();
+                                    Identifier setId = setEntry.unwrapKey().get().identifier();
                                     if (setId.getNamespace().equals(rawId.getNamespace())) {
                                         List<ItemStack> setItems = res.items();
                                         if (setItems != null && !setItems.isEmpty()) {
@@ -1259,7 +1262,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                         displayName = Component.literal(prettySkill + " Skill").withStyle(ChatFormatting.AQUA);
 
                         try {
-                            ResourceLocation iconLocation = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel",
+                            Identifier iconLocation = Identifier.fromNamespaceAndPath("kevs_attributes_panel",
                                     "textures/reskillable_compat/" + skillName + ".png");
                             lines.add(displayName.copy().append(" ").append(Component.literal(opText).withStyle(color)));
                             icons.add(ItemStack.EMPTY);
@@ -1273,7 +1276,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                         displayName = Component.literal("Total Level Bonus").withStyle(ChatFormatting.AQUA);
                         lines.add(displayName.copy().append(" ").append(Component.literal(opText).withStyle(color)));
                         icons.add(ItemStack.EMPTY);
-                        texIcons.add(ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/reskillable_compat/health_bonus.png"));
+                        texIcons.add(Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/reskillable_compat/health_bonus.png"));
                         continue;
                     }
                 }
@@ -1302,7 +1305,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                         icons.add(ItemStack.EMPTY);
 
                         try {
-                            texIcon = ResourceLocation.fromNamespaceAndPath("apotheosis", "textures/items/sigils/socketing.png");
+                            texIcon = Identifier.fromNamespaceAndPath("apotheosis", "textures/items/sigils/socketing.png");
                             texIcons.add(texIcon);
                         } catch (Exception e) {
                             texIcons.add(null);
@@ -1585,7 +1588,10 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) return handleEffectClick(mouseX, mouseY, button);
         if (button != 0) return false;
 
@@ -1664,7 +1670,9 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
+        char chr = event.codepointAsString().isEmpty() ? 0 : event.codepointAsString().charAt(0);
+        int modifiers = event.modifiers();
         if (!searchVisible || !searchFocused) return false;
         if (chr == '\n' || chr == '\r') return true;
         if (chr >= 32 && chr != 127) {
@@ -1674,11 +1682,14 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         if (!searchVisible || !searchFocused) return false;
 
-        boolean ctrl = Screen.hasControlDown();
-        boolean shift = Screen.hasShiftDown();
+        boolean ctrl = PanelKeys.hasControlDown();
+        boolean shift = PanelKeys.hasShiftDown();
 
         if (keyCode == GLFW.GLFW_KEY_A && ctrl) {
             selectAll();
@@ -1862,7 +1873,10 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (button == 0 && draggingImprintWindow) {
             draggingImprintWindow = false;
             return true;
@@ -1875,7 +1889,10 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dx, double dy) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (draggingImprintWindow && button == 0) {
             imprintWindowX = (int) (mouseX - imprintDragGrabX);
             imprintWindowY = (int) (mouseY - imprintDragGrabY);
@@ -1966,7 +1983,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                     .filter(se -> !matchesAny(searchBlacklist, BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value())))
                     .filter(se -> {
                         String name = se.name().getString().toLowerCase(Locale.ROOT);
-                        ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value());
+                        Identifier id = BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value());
                         String idStr = (id == null) ? "" : id.toString().toLowerCase(Locale.ROOT);
                         return name.contains(q) || idStr.contains(q);
                     })
@@ -1979,8 +1996,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                     .collect(Collectors.toList());
 
             for (var se : stats) {
-                ResourceLocation attrId = BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value());
-                ResourceLocation icon = resolveAttrIcon(attrId, cfg);
+                Identifier attrId = BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value());
+                Identifier icon = resolveAttrIcon(attrId, cfg);
 
                 if (se.isNaN()) {
                     boolean hasChanges = hasModifiers(se);
@@ -2006,9 +2023,9 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
         if (stats.isEmpty()) return;
 
-        Map<ResourceLocation, StatEntry> byId = new HashMap<>();
+        Map<Identifier, StatEntry> byId = new HashMap<>();
         for (StatEntry s : stats) {
-            ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(s.attribute().value());
+            Identifier id = BuiltInRegistries.ATTRIBUTE.getKey(s.attribute().value());
             if (id != null) byId.put(id, s);
         }
 
@@ -2017,7 +2034,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             cfg = AttributesPanelConfig.CompactSettings.defaultPreset();
         }
         List<Pattern> globalBlacklist = compilePatterns(cfg.globalBlacklist);
-        Set<ResourceLocation> assigned = new HashSet<>();
+        Set<Identifier> assigned = new HashSet<>();
 
         boolean firstSection = true;
 
@@ -2053,7 +2070,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
             items.add(Item.header(headerLayout));
             for (var se : headerLayout.stats) {
-                ResourceLocation icon = headerLayout.iconFor(se);
+                Identifier icon = headerLayout.iconFor(se);
                 if (icon == null && hasModifiers(se)) {
                     icon = CHANGED;
                 }
@@ -2090,8 +2107,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
             items.add(Item.header(bonusHeader));
             for (var se : bonuses) {
-                ResourceLocation attrId = BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value());
-                ResourceLocation icon = resolveAttrIcon(attrId, cfg);
+                Identifier attrId = BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value());
+                Identifier icon = resolveAttrIcon(attrId, cfg);
                 boolean hasChanges = hasModifiers(se);
 
                 if (icon == null && hasChanges) {
@@ -2113,8 +2130,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
             items.add(Item.header(other));
             for (var se : normal) {
-                ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value());
-                ResourceLocation icon = resolveAttrIcon(id, cfg);
+                Identifier id = BuiltInRegistries.ATTRIBUTE.getKey(se.attribute().value());
+                Identifier icon = resolveAttrIcon(id, cfg);
 
                 if (icon == null && hasModifiers(se)) {
                     icon = CHANGED;
@@ -2151,46 +2168,46 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     }
 
     public boolean handleCharTyped(char c, int mods) {
-        return this.charTyped(c, mods);
+        return this.charTyped(new net.minecraft.client.input.CharacterEvent(c, mods));
     }
 
     public boolean handleKeyPressed(int key, int sc, int mods) {
-        return this.keyPressed(key, sc, mods);
+        return this.keyPressed(new net.minecraft.client.input.KeyEvent(key, sc, mods));
     }
 
     private static class HeaderLayout {
         String headerText;
-        ResourceLocation headerIcon;
+        Identifier headerIcon;
         List<StatEntry> stats = new ArrayList<>();
-        Map<ResourceLocation, ResourceLocation> perAttrIcon = new HashMap<>();
+        Map<Identifier, Identifier> perAttrIcon = new HashMap<>();
 
-        ResourceLocation iconFor(StatEntry s) {
-            ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(s.attribute().value());
+        Identifier iconFor(StatEntry s) {
+            Identifier id = BuiltInRegistries.ATTRIBUTE.getKey(s.attribute().value());
             return id != null ? perAttrIcon.get(id) : null;
         }
     }
 
     private HeaderLayout resolveHeader(AttributesPanelConfig.HeaderDef def,
-                                       Map<ResourceLocation, StatEntry> byId,
+                                       Map<Identifier, StatEntry> byId,
                                        List<Pattern> globalBlacklist,
-                                       Set<ResourceLocation> assigned) {
+                                       Set<Identifier> assigned) {
         HeaderLayout out = new HeaderLayout();
 
         parseHeaderLabel(def.header, out);
 
         List<Pattern> localBlacklist = compilePatterns(def.blacklist);
-        Set<ResourceLocation> addedHere = new HashSet<>();
+        Set<Identifier> addedHere = new HashSet<>();
 
         if (def.attributes != null) {
             for (var spec : def.attributes) {
                 if (spec == null || spec.id == null || spec.id.isBlank()) continue;
 
-                ResourceLocation iconId = tryIdentifier(spec.icon);
+                Identifier iconId = tryIdentifier(spec.icon);
 
                 if (spec.id.contains("*")) {
                     Pattern pat = globToPattern(spec.id);
 
-                    List<Map.Entry<ResourceLocation, StatEntry>> matches = byId.entrySet().stream()
+                    List<Map.Entry<Identifier, StatEntry>> matches = byId.entrySet().stream()
                             .filter(e -> !assigned.contains(e.getKey()))
                             .filter(e -> !addedHere.contains(e.getKey()))
                             .filter(e -> !matchesAny(globalBlacklist, e.getKey()))
@@ -2206,7 +2223,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                         if (iconId != null) out.perAttrIcon.put(e.getKey(), iconId);
                     }
                 } else {
-                    ResourceLocation id = tryIdentifier(spec.id);
+                    Identifier id = tryIdentifier(spec.id);
                     if (id != null && byId.containsKey(id)) {
                         if (!assigned.contains(id)
                                 && !matchesAny(globalBlacklist, id)
@@ -2224,7 +2241,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         return out;
     }
 
-    private int orderScore(ResourceLocation id, AttributesPanelConfig.CompactSettings cfg) {
+    private int orderScore(Identifier id, AttributesPanelConfig.CompactSettings cfg) {
         if (id == null || cfg == null || cfg.headers == null) return Integer.MAX_VALUE;
 
         int hIdx = 0;
@@ -2246,7 +2263,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                         return hIdx * 10000 + sIdx * 100;
                     }
                 } else {
-                    ResourceLocation exact = tryIdentifier(spec.id);
+                    Identifier exact = tryIdentifier(spec.id);
                     if (exact != null && exact.equals(id)) {
                         return hIdx * 10000 + sIdx * 100;
                     }
@@ -2258,7 +2275,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         return Integer.MAX_VALUE - 1;
     }
 
-    private static boolean matchesAny(List<Pattern> patterns, ResourceLocation id) {
+    private static boolean matchesAny(List<Pattern> patterns, Identifier id) {
         if (id == null || patterns == null) return false;
         String s = id.toString();
         for (Pattern p : patterns) {
@@ -2282,10 +2299,10 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         return Pattern.compile("^" + escaped + "$");
     }
 
-    private static ResourceLocation tryIdentifier(String s) {
+    private static Identifier tryIdentifier(String s) {
         if (s == null || s.isBlank()) return null;
         try {
-            return ResourceLocation.parse(s);
+            return Identifier.parse(s);
         } catch (Exception e) {
             return null;
         }
@@ -2377,23 +2394,23 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         }
 
         if (haveText) {
-            ctx.pose().pushPose();
-            ctx.pose().scale(HEADER_FONT_SCALE, HEADER_FONT_SCALE, 1f);
+            ctx.pose().pushMatrix();
+            ctx.pose().scale(HEADER_FONT_SCALE, HEADER_FONT_SCALE);
             int drawX = (int) (x / HEADER_FONT_SCALE);
             int drawY = (int) (y / HEADER_FONT_SCALE);
             ctx.drawString(font, header.headerText, drawX, drawY, colorHeader(), true);
-            ctx.pose().popPose();
+            ctx.pose().popMatrix();
             x += (int) Math.ceil(font.width(header.headerText) * HEADER_FONT_SCALE);
         }
 
         if (iconRequested && !iconAvailable) {
             if (haveText) x += missingGap;
-            ctx.pose().pushPose();
-            ctx.pose().scale(HEADER_FONT_SCALE, HEADER_FONT_SCALE, 1f);
+            ctx.pose().pushMatrix();
+            ctx.pose().scale(HEADER_FONT_SCALE, HEADER_FONT_SCALE);
             int drawX = (int) (x / HEADER_FONT_SCALE);
             int drawY = (int) (y / HEADER_FONT_SCALE);
             ctx.drawString(font, missingMarker, drawX, drawY, colorMuted(), true);
-            ctx.pose().popPose();
+            ctx.pose().popMatrix();
         }
     }
 
@@ -2466,24 +2483,24 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             int drawXpx = iconLeft + Math.max(0, (iconColW() - glyphW) / 2);
 
             if (split.hasIcon()) {
-                ctx.pose().pushPose();
-                ctx.pose().scale(fs, fs, 1f);
+                ctx.pose().pushMatrix();
+                ctx.pose().scale(fs, fs);
                 int drawX = (int) (drawXpx / fs);
                 int drawY = (int) (y / fs);
                 ctx.drawString(font, split.leadingIcon, drawX, drawY, 0xFFFFFF, true);
-                ctx.pose().popPose();
+                ctx.pose().popMatrix();
             } else if (statRow.icon != null) {
                 float s = fs * (ATTR_ICON_SIZE / (float) TEX_ICON_SRC_PX);
                 int iconDrawW = Math.round(ATTR_ICON_SIZE * fs);
                 int drawXpx2 = iconLeft + Math.max(0, (iconColW() - iconDrawW) / 2);
 
-                ctx.pose().pushPose();
-                ctx.pose().scale(s, s, 1f);
+                ctx.pose().pushMatrix();
+                ctx.pose().scale(s, s);
                 int drawX = (int) Math.floor(drawXpx2 / s);
                 int drawY = (int) Math.floor((y - 1) / s);
                 ctx.blit(statRow.icon, drawX, drawY, 0, 0, TEX_ICON_SRC_PX, TEX_ICON_SRC_PX,
                         TEX_ICON_SRC_PX, TEX_ICON_SRC_PX);
-                ctx.pose().popPose();
+                ctx.pose().popMatrix();
             } else if (statRow.bullet) {
                 int bx = iconLeft + Math.max(0, (iconColW() - BULLET_SIZE) / 2);
                 int by = y + Math.max(0, (ROW_H_TEXT - BULLET_SIZE) / 2) + BULLET_Y_NUDGE;
@@ -2494,12 +2511,12 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             String bonusText = split.cleanName + " (" + statRow.stat.bonusCount() + " bonus" +
                     (statRow.stat.bonusCount() == 1 ? "" : "es") + ")";
 
-            ctx.pose().pushPose();
-            ctx.pose().scale(fs, fs, 1f);
+            ctx.pose().pushMatrix();
+            ctx.pose().scale(fs, fs);
             int nDrawX = (int) (nameLeft / fs);
             int drawY = (int) (y / fs);
             ctx.drawString(font, bonusText, nDrawX, drawY, colorBody(), true);
-            ctx.pose().popPose();
+            ctx.pose().popMatrix();
         } else {
             final int valueLeft = iconLeft + iconColW() + ICON_VALUE_GAP;
 
@@ -2507,25 +2524,25 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                 int glyphW = (int) Math.ceil(font.width(split.leadingIcon) * fs);
                 int drawXpx = iconLeft + Math.max(0, (iconColW() - glyphW) / 2);
 
-                ctx.pose().pushPose();
-                ctx.pose().scale(fs, fs, 1f);
+                ctx.pose().pushMatrix();
+                ctx.pose().scale(fs, fs);
                 int drawX = (int) (drawXpx / fs);
                 int drawY = (int) (y / fs);
                 ctx.drawString(font, split.leadingIcon, drawX, drawY, 0xFFFFFF, true);
-                ctx.pose().popPose();
+                ctx.pose().popMatrix();
 
             } else if (statRow.icon != null) {
                 float s = fs * (ATTR_ICON_SIZE / (float) TEX_ICON_SRC_PX);
                 int iconDrawW = Math.round(ATTR_ICON_SIZE * fs);
                 int drawXpx = iconLeft + Math.max(0, (iconColW() - iconDrawW) / 2);
 
-                ctx.pose().pushPose();
-                ctx.pose().scale(s, s, 1f);
+                ctx.pose().pushMatrix();
+                ctx.pose().scale(s, s);
                 int drawX = (int) Math.floor(drawXpx / s);
                 int drawY = (int) Math.floor((y - 1) / s);
                 ctx.blit(statRow.icon, drawX, drawY, 0, 0, TEX_ICON_SRC_PX, TEX_ICON_SRC_PX,
                         TEX_ICON_SRC_PX, TEX_ICON_SRC_PX);
-                ctx.pose().popPose();
+                ctx.pose().popMatrix();
             } else if (statRow.bullet) {
                 int bx = iconLeft + Math.max(0, (iconColW() - BULLET_SIZE) / 2);
                 int by = y + Math.max(0, (ROW_H_TEXT - BULLET_SIZE) / 2) + BULLET_Y_NUDGE;
@@ -2551,8 +2568,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                          valueLeft + valueW + glowPaddingX, y + rowH + glowPaddingY, glowColor);
             }
 
-            ctx.pose().pushPose();
-            ctx.pose().scale(fs, fs, 1f);
+            ctx.pose().pushMatrix();
+            ctx.pose().scale(fs, fs);
 
             int vDrawX = (int) (valueLeft / fs);
             int drawY = (int) (y / fs);
@@ -2561,7 +2578,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             int nDrawX = (int) (nameLeft / fs);
             ctx.drawString(font, split.cleanName, nDrawX, drawY, colorBody(), true);
 
-            ctx.pose().popPose();
+            ctx.pose().popMatrix();
         }
     }
 
@@ -2597,8 +2614,9 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
         int iconDrawW = Math.round(ATTR_ICON_SIZE * fs);
         int iconX = innerX + Math.max(0, (iconColW() - iconDrawW) / 2);
-        TextureAtlasSprite sprite = root.mc().getMobEffectTextures().get(instance.getEffect());
-        ctx.blit(iconX, y - 1, 0, iconDrawW, iconDrawW, sprite);
+        Identifier effectSpriteId = Identifier.withDefaultNamespace("mob_effect/" +
+                net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getKey(instance.getEffect().value()).getPath());
+        ctx.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, effectSpriteId, iconX, y - 1, iconDrawW, iconDrawW);
 
         String duration = effectDuration(instance).getString();
         int durationW = (int) Math.ceil(font.width(duration) * fs);
@@ -2608,12 +2626,12 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         int maxNameW = Math.max(0, durationLeft - spaceW - nameLeft);
         String name = font.plainSubstrByWidth(effectDisplayName(instance).getString(), (int) (maxNameW / fs));
 
-        ctx.pose().pushPose();
-        ctx.pose().scale(fs, fs, 1f);
+        ctx.pose().pushMatrix();
+        ctx.pose().scale(fs, fs);
         int drawY = (int) (y / fs);
         ctx.drawString(font, name, (int) (nameLeft / fs), drawY, colorBody(), true);
         ctx.drawString(font, duration, (int) (durationLeft / fs), drawY, colorMuted(), true);
-        ctx.pose().popPose();
+        ctx.pose().popMatrix();
     }
 
     private void showEffectTooltip(Font font, MobEffectInstance instance, int mouseX, int mouseY) {
@@ -2633,7 +2651,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         }
 
         List<Component> modifierLines = new ArrayList<>();
-        effect.createModifiers(instance.getAmplifier(), (attr, mod) -> modifierLines.add(formatEffectModifier(attr, mod)));
+        instance.getEffect().value().createModifiers(instance.getAmplifier(), (attr, mod) -> modifierLines.add(formatEffectModifier(attr, mod)));
         if (!modifierLines.isEmpty()) {
             lines.add(Component.empty());
             lines.add(Component.translatable("attributepanel.message.modifiers").withStyle(ChatFormatting.YELLOW));
@@ -2868,7 +2886,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             return it;
         }
 
-        static Item stat(StatEntry se, ResourceLocation icon) {
+        static Item stat(StatEntry se, Identifier icon) {
             Item it = new Item(ItemType.STAT, ROW_H_TEXT);
             it.stat = new StatRow(se, icon, icon == null, false);
             return it;
@@ -2880,7 +2898,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             return it;
         }
 
-        static Item statBonus(StatEntry se, ResourceLocation icon) {
+        static Item statBonus(StatEntry se, Identifier icon) {
             Item it = new Item(ItemType.STAT, ROW_H_TEXT);
             it.stat = new StatRow(se, icon, icon == null, true);
             return it;
@@ -2901,15 +2919,15 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
     private static class StatRow {
         final StatEntry stat;
-        final ResourceLocation icon;
+        final Identifier icon;
         final boolean bullet;
         final boolean inBonusesGroup;
 
-        StatRow(StatEntry se, ResourceLocation icon) {
+        StatRow(StatEntry se, Identifier icon) {
             this(se, icon, false, false);
         }
 
-        StatRow(StatEntry se, ResourceLocation icon, boolean bullet, boolean inBonusesGroup) {
+        StatRow(StatEntry se, Identifier icon, boolean bullet, boolean inBonusesGroup) {
             this.stat = se;
             this.icon = icon;
             this.bullet = bullet;
@@ -3084,8 +3102,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         hoveringImprintDragHandle = mouseX >= handleX && mouseX <= handleX + IMPRINT_WIN_HANDLE &&
                 mouseY >= handleY && mouseY <= handleY + IMPRINT_WIN_HANDLE;
 
-        ctx.pose().pushPose();
-        ctx.pose().translate(0f, 0f, 600f);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate(0f, 0f);
 
 
         ctx.fill(winX - 1, winY - 1, winX + winW + 1, winY + winH + 1, 0xF0100010);
@@ -3134,7 +3152,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             ctx.fill(sbX, (int) knobY, sbX + 2, (int) (knobY + knobH), 0xCCFFFFFF);
         }
 
-        ctx.pose().popPose();
+        ctx.pose().popMatrix();
     }
 
     private Component imprintValueText(TieredMoreCompat.ImprintState imp) {
@@ -3188,7 +3206,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             Map<String, Double> baseMultMap = new TreeMap<>();
             Map<String, Double> totalMultMap = new TreeMap<>();
 
-            for (Holder<Attribute> entry : BuiltInRegistries.ATTRIBUTE.holders().toList()) {
+            for (Holder<Attribute> entry : BuiltInRegistries.ATTRIBUTE.listElements().toList()) {
                 Attribute attr = entry.value();
                 AttributeInstance instance = player.getAttribute(entry);
                 if (instance == null || instance.getModifiers().isEmpty()) continue;

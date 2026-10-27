@@ -43,7 +43,7 @@ public class NetworkManagerImpl {
     }
 
     public static void sendToServer(RequestAttributeSnapshotPayload payload) {
-        PacketDistributor.sendToServer(payload);
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(payload);
     }
 
     public static void sendToClient(ServerPlayer player, SendAttributeSnapshotPayload payload) {

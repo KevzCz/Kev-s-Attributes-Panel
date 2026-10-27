@@ -21,7 +21,7 @@ public class ValueColorHelper {
             return 0xFFFFFF;
         }
 
-        ResourceLocation attrId = BuiltInRegistries.ATTRIBUTE.getKey(stat.attribute().value());
+        Identifier attrId = BuiltInRegistries.ATTRIBUTE.getKey(stat.attribute().value());
         if (attrId == null) {
             return 0xFFFFFF;
         }

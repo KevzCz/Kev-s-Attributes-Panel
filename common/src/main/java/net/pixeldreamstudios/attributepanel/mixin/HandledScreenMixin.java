@@ -33,8 +33,8 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Shadow protected T menu;
 
     @Unique
-    private static final ResourceLocation ATTRIBUTE_BOOK =
-            ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/attribute_book.png");
+    private static final Identifier ATTRIBUTE_BOOK =
+            Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/attribute_book.png");
 
     @Unique
     private int attributespanel$iconTick = 0;
@@ -110,12 +110,6 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
                     mouseY >= buttonY && mouseY <= buttonY + iconSize;
 
             int color = hovered ? 0xFFFFFFFF : 0xFF666666;
-            context.setColor(
-                    ((color >> 16) & 0xFF) / 255f,
-                    ((color >> 8) & 0xFF) / 255f,
-                    (color & 0xFF) / 255f,
-                    ((color >> 24) & 0xFF) / 255f
-            );
 
             boolean animate = AttributesPanelConfig.INSTANCE.hoverIconAnimation;
             if (hovered && animate) {
@@ -124,22 +118,21 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
                 float scale = 1.0f + 0.1f * pulse;
                 float rotation = 1.5f * pulse;
 
-                PoseStack pose = context.pose();
-                pose.pushPose();
-                pose.translate(buttonX + iconSize / 2f, buttonY + iconSize / 2f, 0);
-                pose.scale(scale, scale, 1f);
-                pose.mulPose(new Quaternionf().rotationZ((float) Math.toRadians(rotation)));
-                pose.translate(-iconSize / 2f, -iconSize / 2f, 0);
+                var pose = context.pose();
+                pose.pushMatrix();
+                pose.translate(buttonX + iconSize / 2f, buttonY + iconSize / 2f);
+                pose.scale(scale, scale);
+                pose.rotate((float) Math.toRadians(rotation));
+                pose.translate(-iconSize / 2f, -iconSize / 2f);
                 context.blit(ATTRIBUTE_BOOK, 0, 0, 0, 0, iconSize, iconSize, 9, 9);
-                pose.popPose();
+                pose.popMatrix();
             } else {
                 context.blit(ATTRIBUTE_BOOK, buttonX, buttonY, 0, 0, iconSize, iconSize, 9, 9);
             }
 
-            context.setColor(1f, 1f, 1f, 1f);
 
             if (hovered) {
-                context.renderTooltip(this.font, Component.translatable("attributepanel.tooltip.button"), mouseX, mouseY);
+                context.setTooltipForNextFrame(Component.translatable("attributepanel.tooltip.button"), mouseX, mouseY);
             }
         }
     }
@@ -155,7 +148,10 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void attributespanel$onMouseClick(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+    private void attributespanel$onMouseClick(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (!attributespanel$shouldAttach()) return;
         attributespanel$ensurePanel();
 
@@ -171,7 +167,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
                 return;
             }
 
-            if (attributespanel$attributePanel.mouseClicked(mouseX, mouseY, button)) {
+            if (attributespanel$attributePanel.mouseClicked(event, doubleClick)) {
                 this.setFocused(attributespanel$attributePanel);
                 if (button == 0) this.setDragging(true);
                 cir.setReturnValue(true);
@@ -180,21 +176,27 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     }
 
     @Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
-    private void attributespanel$onMouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY,
+    private void attributespanel$onMouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY,
                                                 CallbackInfoReturnable<Boolean> cir) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (!attributespanel$shouldAttach()) return;
         if (attributespanel$attributePanel != null &&
-                attributespanel$attributePanel.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
+                attributespanel$attributePanel.mouseDragged(event, dragX, dragY)) {
             cir.setReturnValue(true);
         }
     }
 
     @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
-    private void attributespanel$onMouseReleased(double mouseX, double mouseY, int button,
+    private void attributespanel$onMouseReleased(net.minecraft.client.input.MouseButtonEvent event,
                                                  CallbackInfoReturnable<Boolean> cir) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (!attributespanel$shouldAttach()) return;
         if (attributespanel$attributePanel != null &&
-                attributespanel$attributePanel.mouseReleased(mouseX, mouseY, button)) {
+                attributespanel$attributePanel.mouseReleased(event)) {
             cir.setReturnValue(true);
         }
     }

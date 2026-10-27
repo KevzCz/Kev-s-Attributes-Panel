@@ -7,7 +7,7 @@ import net.pixeldreamstudios.iconleadingtooltip.util.IconLeadingUtil;
 public class IconLeadingCompatImpl {
 
     public static boolean isLoaded() {
-        return ModList.get().isLoaded("icon_leading_tooltip");
+        return false;
     }
 
     public static IconLeadingCompat.IconSplit extractIconImpl(String text) {

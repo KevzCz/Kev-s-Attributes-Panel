@@ -5,7 +5,7 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.pixeldreamstudios.attributepanel.KevsAttributesPanel;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
 import net.pixeldreamstudios.attributepanel.network.fabric.NetworkManagerImpl;
@@ -24,14 +24,14 @@ public final class KevsAttributesPanelFabric implements ModInitializer {
         FabricLoader.getInstance().getModContainer("kevs_attributes_panel").ifPresent(modContainer -> {
 
             ResourceManagerHelper.registerBuiltinResourcePack(
-                    ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "kap_minimal_dark"),
+                    Identifier.fromNamespaceAndPath("kevs_attributes_panel", "kap_minimal_dark"),
                     modContainer,
                     Component.literal("KAP Minimal Dark"),
                     ResourcePackActivationType.NORMAL
             );
 
             ResourceManagerHelper.registerBuiltinResourcePack(
-                    ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "kevs_attributes_panel_old"),
+                    Identifier.fromNamespaceAndPath("kevs_attributes_panel", "kevs_attributes_panel_old"),
                     modContainer,
                     Component.literal("Old Panel Icons"),
                     ResourcePackActivationType.NORMAL

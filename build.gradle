@@ -1,8 +1,31 @@
+buildscript {
+    repositories {
+        maven { url = file("$rootDir/gradle/local-maven") }
+        gradlePluginPortal()
+        mavenCentral()
+        maven { url = 'https://maven.fabricmc.net/' }
+    }
+    dependencies {
+        // maven.architectury.dev stalls on some networks; resolve the plugin and
+        // loom from the local mirror (exact upstream jars). 3.5 is needed for the
+        // NEOFORGE mod loader constant; loom 1.17 for modern MC.
+        classpath 'architectury-plugin:architectury-plugin.gradle.plugin:3.5.0-local@jar'
+        classpath 'dev.architectury:architectury-loom:1.17.1-local'
+        classpath 'dev.architectury:architectury-transformer:5.2.92'
+        classpath 'dev.architectury:mercury:0.4.3.18'
+        classpath 'dev.architectury:refmap-remapper:1.0.5'
+        classpath 'dev.architectury:at:1.0.1'
+        classpath 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.72'
+        classpath 'org.jetbrains.gradle.plugin.idea-ext:org.jetbrains.gradle.plugin.idea-ext.gradle.plugin:1.4.1'
+    }
+}
+
 plugins {
-    id 'dev.architectury.loom' version '1.11-SNAPSHOT' apply false
-    id 'architectury-plugin' version '3.4-SNAPSHOT'
     id 'com.gradleup.shadow' version '8.3.6' apply false
 }
+
+// architectury-plugin applied via the artifact-only classpath above
+apply plugin: 'architectury-plugin'
 
 architectury {
     minecraft = project.minecraft_version
@@ -14,6 +37,7 @@ allprojects {
 }
 
 subprojects {
+    apply plugin: 'dev.architectury.loom'
     apply plugin: 'dev.architectury.loom'
     apply plugin: 'architectury-plugin'
     apply plugin: 'maven-publish'
@@ -44,8 +68,15 @@ subprojects {
             name = "Ladysnake Libs"
             url = 'https://maven.ladysnake.org/releases'
         }
-        maven {
-            url "https://cursemaven.com"
+        // cursemaven times out on this network; the exact jars are mirrored
+        // locally, so force curse.maven to resolve exclusively from there
+        exclusiveContent {
+            forRepository { maven { url = file("$rootDir/gradle/local-maven") } }
+            filter { includeGroup 'curse.maven' }
+        }
+        exclusiveContent {
+            forRepository { maven { url = file("$rootDir/gradle/local-maven") } }
+            filter { includeGroup "org.ladysnake.cardinal-components-api" }
         }
         mavenCentral()
     }

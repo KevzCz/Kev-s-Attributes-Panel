@@ -16,13 +16,13 @@ public class ClientNetworkHandler {
         KevsAttributesPanel.LOGGER.info("Snapshot data: {}", data);
 
         if (Minecraft.getInstance().player != null) {
-            Minecraft.getInstance().player.sendSystemMessage(
+            Minecraft.getInstance().player.displayClientMessage(
                     Component.literal("Received attribute snapshot for: " + playerName)
-            );
+            , false);
 
-            Minecraft.getInstance().player.sendSystemMessage(
+            Minecraft.getInstance().player.displayClientMessage(
                     Component.literal("Data: " + data.toString())
-            );
+            , false);
         }
     }
 }

@@ -8,24 +8,25 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.pixeldreamstudios.attributepanel.compat.CuriosCompat;
 import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
 import net.pixeldreamstudios.attributepanel.compat.TrinketsCompat;
@@ -40,13 +41,13 @@ import static net.pixeldreamstudios.attributepanel.client.AttributePanelDrawable
 class BookAttributePanelDrawable {
     private final AttributePanelDrawable root;
 
-    private static final ResourceLocation BOOK_TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/gui/book.png");
-    private static final ResourceLocation INFO_ICON = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/attribute_book.png");
+    private static final Identifier BOOK_TEXTURE = Identifier.fromNamespaceAndPath("minecraft", "textures/gui/book.png");
+    private static final Identifier INFO_ICON = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/attribute_book.png");
     private static final int INFO_ICON_SIZE = 8;
-    private static final ResourceLocation DD_POWER_ICON = ResourceLocation.fromNamespaceAndPath("dungeon_difficulty", "textures/symbol/power_level.png");
-    private static final ResourceLocation FTB_QUEST_BOOK_ICON = ResourceLocation.fromNamespaceAndPath("ftbquests", "textures/item/book.png");
-    private static final ResourceLocation PERMA = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/perma.png");
-    private static final ResourceLocation EQUIPPED = ResourceLocation.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/equipped.png");
+    private static final Identifier DD_POWER_ICON = Identifier.fromNamespaceAndPath("dungeon_difficulty", "textures/symbol/power_level.png");
+    private static final Identifier FTB_QUEST_BOOK_ICON = Identifier.fromNamespaceAndPath("ftbquests", "textures/item/book.png");
+    private static final Identifier PERMA = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/perma.png");
+    private static final Identifier EQUIPPED = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/equipped.png");
 
     BookAttributePanelDrawable(AttributePanelDrawable root) {
         this.root = root;
@@ -153,7 +154,10 @@ class BookAttributePanelDrawable {
         drawBookTooltipButton(context, font, hoverIndex, mouseX, mouseY, rowHeight, padding);
     }
 
-    boolean mouseClicked(double mouseX, double mouseY, int button) {
+    boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         int btnY = root.top() + root.panelHeight() - 20;
         ButtonCoords coords = getBookButtonCoords(root.mc().font);
 
@@ -244,7 +248,7 @@ class BookAttributePanelDrawable {
         if (player == null) return;
 
         boolean shiftDown = GLFW.glfwGetKey(
-                client.getWindow().getWindow(),
+                client.getWindow().handle(),
                 client.options.keyShift.getDefaultKey().getValue()
         ) == GLFW.GLFW_PRESS;
 
@@ -252,7 +256,7 @@ class BookAttributePanelDrawable {
 
         List<Component> lines = new ArrayList<>();
         List<ItemStack> icons = new ArrayList<>();
-        List<ResourceLocation> texIcons = new ArrayList<>();
+        List<Identifier> texIcons = new ArrayList<>();
 
         lines.add(Component.translatable("attributepanel.tooltip.base", String.format("%.2f", stat.base())));
         icons.add(ItemStack.EMPTY);
@@ -295,7 +299,7 @@ class BookAttributePanelDrawable {
                     String fullPath = rawId.getPath();
                     String[] parts = fullPath.split("/");
                     if (parts.length >= 3 && parts[parts.length - 1].contains("_")) {
-                        rawId = ResourceLocation.fromNamespaceAndPath("tiered", parts[parts.length - 1]);
+                        rawId = Identifier.fromNamespaceAndPath("tiered", parts[parts.length - 1]);
                     }
                 }
 
@@ -343,13 +347,13 @@ class BookAttributePanelDrawable {
 
                 String fullPath = rawId.getPath();
                 String[] idParts = fullPath.split("\\.", 2);
-                ResourceLocation modId = ResourceLocation.fromNamespaceAndPath(rawId.getNamespace(), idParts[0]);
+                Identifier modId = Identifier.fromNamespaceAndPath(rawId.getNamespace(), idParts[0]);
                 String customName = (idParts.length > 1) ? idParts[1] : null;
                 boolean usedCustomName = false;
 
                 Component displayName = Component.literal(formatModifierId(modId));
                 ItemStack iconStack = ItemStack.EMPTY;
-                ResourceLocation texIcon = null;
+                Identifier texIcon = null;
                 boolean foundSource = false;
 
                 if (rawId.getNamespace().equals("texture")) {
@@ -366,7 +370,7 @@ class BookAttributePanelDrawable {
 
                         String customNameFromPath = texParts[texParts.length - 1];
 
-                        texIcon = ResourceLocation.fromNamespaceAndPath(textureNamespace, texPathBuilder.toString());
+                        texIcon = Identifier.fromNamespaceAndPath(textureNamespace, texPathBuilder.toString());
 
                         String pretty = Arrays.stream(customNameFromPath.split("_"))
                                 .map(s -> s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1).toLowerCase(Locale.ROOT))
@@ -419,18 +423,21 @@ class BookAttributePanelDrawable {
                         String enchKey = (stop > 0 && stop <= possible.length()) ? possible.substring(0, stop) : possible;
 
                         if (enchKey != null && ! enchKey.isBlank() && root.mc().player != null && root.mc().player.level() != null) {
-                            ResourceLocation enchId = ResourceLocation.fromNamespaceAndPath(rawId.getNamespace(), enchKey);
+                            Identifier enchId = Identifier.fromNamespaceAndPath(rawId.getNamespace(), enchKey);
 
                             var drm = root.mc().player.level().registryAccess();
-                            Registry<Enchantment> enchantmentRegistry = drm.registryOrThrow(Registries.ENCHANTMENT);
+                            Registry<Enchantment> enchantmentRegistry = drm.lookupOrThrow(Registries.ENCHANTMENT);
 
                             ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT, enchId);
-                            var entryOpt = enchantmentRegistry.getHolder(key);
+                            var entryOpt = enchantmentRegistry.get(key);
 
                             if (entryOpt.isPresent()) {
                                 var enchEntry = entryOpt.get();
                                 int lvl = Math.max(1, (int) Math.round(Math.abs(mod.amount())));
-                                iconStack = EnchantedBookItem.createForEnchantment(new EnchantmentInstance(enchEntry, lvl));
+                                iconStack = new ItemStack(Items.ENCHANTED_BOOK);
+                                var mut = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+                                mut.set(enchEntry, lvl);
+                                iconStack.set(DataComponents.STORED_ENCHANTMENTS, mut.toImmutable());
                                 Enchantment enchVal = enchEntry.value();
                                 displayName = Enchantment.getFullname(enchEntry, lvl).copy().withStyle(ChatFormatting.AQUA);
                                 foundSource = true;
@@ -465,7 +472,7 @@ class BookAttributePanelDrawable {
                     }
 
                     if (!matched[0]) {
-                        var defaultMods = stack.getItem().getDefaultAttributeModifiers();
+                        var defaultMods = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
                         for (var entry : defaultMods.modifiers()) {
                             if (entry.slot().test(slot) &&
                                     entry.modifier().id().equals(mod.id()) &&
@@ -490,9 +497,9 @@ class BookAttributePanelDrawable {
                 if (!foundSource) {
                     String[] pathParts = rawId.getPath().split("\\.", 2)[0].split("/");
                     if (pathParts.length > 0) {
-                        ResourceLocation guess = ResourceLocation.fromNamespaceAndPath(rawId.getNamespace(), pathParts[pathParts.length - 1]);
+                        Identifier guess = Identifier.fromNamespaceAndPath(rawId.getNamespace(), pathParts[pathParts.length - 1]);
                         if (BuiltInRegistries.ITEM.containsKey(guess)) {
-                            Item item = BuiltInRegistries.ITEM.get(guess);
+                            Item item = BuiltInRegistries.ITEM.get(guess).orElseThrow().value();
                             iconStack = new ItemStack(item);
                             displayName = iconStack.getHoverName().copy().withStyle(iconStack.getRarity().color());
                             foundSource = true;
@@ -534,7 +541,7 @@ class BookAttributePanelDrawable {
                             for (var res : results) {
                                 var setEntry = res.set();
                                 if (setEntry.unwrapKey().isPresent()) {
-                                    ResourceLocation setId = setEntry.unwrapKey().get().location();
+                                    Identifier setId = setEntry.unwrapKey().get().identifier();
                                     if (setId.getNamespace().equals(rawId.getNamespace())) {
                                         List<ItemStack> setItems = res.items();
                                         if (setItems != null && !setItems.isEmpty()) {
@@ -801,7 +808,7 @@ class BookAttributePanelDrawable {
         Map<String, Double> baseMultMap = new TreeMap<>();
         Map<String, Double> totalMultMap = new TreeMap<>();
 
-        for (Holder<Attribute> entry : BuiltInRegistries.ATTRIBUTE.holders().toList()) {
+        for (Holder<Attribute> entry : BuiltInRegistries.ATTRIBUTE.listElements().toList()) {
             Attribute attr = entry.value();
             AttributeInstance instance = player.getAttribute(entry);
             if (instance == null || instance.getModifiers().isEmpty()) continue;

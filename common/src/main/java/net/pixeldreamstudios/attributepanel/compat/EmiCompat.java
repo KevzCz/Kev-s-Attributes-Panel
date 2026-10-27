@@ -1,21 +1,19 @@
 package net.pixeldreamstudios.attributepanel.compat;
 
-import dev.architectury.injectables.annotations.ExpectPlatform;
 import net.minecraft.world.effect.MobEffect;
-import net.pixeldreamstudios.attributepanel.compat.emi.EmiEffectBridge;
 
+// EMI has no 1.21.11 build yet; the integration is disabled until it ports.
 public class EmiCompat {
 
-    @ExpectPlatform
     public static boolean isLoaded() {
-        throw new AssertionError();
+        return false;
     }
 
     public static boolean hasEffectEntry(MobEffect effect) {
-        return effect != null && isLoaded() && EmiEffectBridge.hasEntry(effect);
+        return false;
     }
 
     public static boolean showEffectRecipes(MobEffect effect) {
-        return effect != null && isLoaded() && EmiEffectBridge.displayRecipes(effect);
+        return false;
     }
 }

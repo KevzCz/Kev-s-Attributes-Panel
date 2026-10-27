@@ -1,19 +1,19 @@
 package net.pixeldreamstudios.attributepanel.client;
 
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class AttributeAnimationState {
-    private final Map<ResourceLocation, ValueAnimation> valueAnimations = new HashMap<>();
-    private final Map<ResourceLocation, GlowEffect> glowEffects = new HashMap<>();
+    private final Map<Identifier, ValueAnimation> valueAnimations = new HashMap<>();
+    private final Map<Identifier, GlowEffect> glowEffects = new HashMap<>();
     private long lastUpdateTime = System.currentTimeMillis();
 
     public void updateValue(Holder<Attribute> attribute, double oldValue, double newValue) {
-        ResourceLocation id = attribute.unwrapKey().map(key -> key.location()).orElse(null);
+        Identifier id = attribute.unwrapKey().map(key -> key.identifier()).orElse(null);
         if (id == null) return;
 
         ValueAnimation anim = valueAnimations.get(id);
@@ -32,7 +32,7 @@ public class AttributeAnimationState {
     }
 
     public double getDisplayValue(Holder<Attribute> attribute, double currentValue) {
-        ResourceLocation id = attribute.unwrapKey().map(key -> key.location()).orElse(null);
+        Identifier id = attribute.unwrapKey().map(key -> key.identifier()).orElse(null);
         if (id == null) return currentValue;
 
         ValueAnimation anim = valueAnimations.get(id);
@@ -42,7 +42,7 @@ public class AttributeAnimationState {
     }
 
     public float getGlowIntensity(Holder<Attribute> attribute) {
-        ResourceLocation id = attribute.unwrapKey().map(key -> key.location()).orElse(null);
+        Identifier id = attribute.unwrapKey().map(key -> key.identifier()).orElse(null);
         if (id == null) return 0f;
 
         GlowEffect glow = glowEffects.get(id);
@@ -52,7 +52,7 @@ public class AttributeAnimationState {
     }
 
     public void stopGlow(Holder<Attribute> attribute) {
-        ResourceLocation id = attribute.unwrapKey().map(key -> key.location()).orElse(null);
+        Identifier id = attribute.unwrapKey().map(key -> key.identifier()).orElse(null);
         if (id == null) return;
 
         GlowEffect glow = glowEffects.get(id);

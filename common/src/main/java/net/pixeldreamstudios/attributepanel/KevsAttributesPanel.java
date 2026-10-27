@@ -1,7 +1,7 @@
 package net.pixeldreamstudios.attributepanel;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +10,8 @@ public final class KevsAttributesPanel {
     public static final String MOD_ID = "kevs_attributes_panel";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    public static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(MOD_ID, path);
     }
 
     public static void init() {
@@ -29,8 +29,8 @@ public final class KevsAttributesPanel {
 
                     if (attribute.id.contains("*")) {
                         String regex = attribute.id.replace("*", ".*");
-                        for (var entry : BuiltInRegistries.ATTRIBUTE.holders().toList()) {
-                            var entryId = entry.unwrapKey().map(key -> key.location()).orElse(null);
+                        for (var entry : BuiltInRegistries.ATTRIBUTE.listElements().toList()) {
+                            var entryId = entry.unwrapKey().map(key -> key.identifier()).orElse(null);
                             if (entryId != null && entryId.toString().matches(regex)) {
                                 try {
                                     entry.value().setSyncable(true);
@@ -40,10 +40,10 @@ public final class KevsAttributesPanel {
                             }
                         }
                     } else {
-                        var id = ResourceLocation.tryParse(attribute.id);
+                        var id = Identifier.tryParse(attribute.id);
                         if (id == null) continue;
 
-                        var entry = BuiltInRegistries.ATTRIBUTE.getHolder(id);
+                        var entry = BuiltInRegistries.ATTRIBUTE.get(id);
                         if (entry.isPresent()) {
                             try {
                                 entry.get().value().setSyncable(true);
@@ -55,10 +55,10 @@ public final class KevsAttributesPanel {
                 }
             }
             for (String attrIdStr : config.percentAttributesBase100) {
-                var id = ResourceLocation.tryParse(attrIdStr);
+                var id = Identifier.tryParse(attrIdStr);
                 if (id == null) continue;
 
-                var entry = BuiltInRegistries.ATTRIBUTE.getHolder(id);
+                var entry = BuiltInRegistries.ATTRIBUTE.get(id);
                 if (entry.isPresent()) {
                     try {
                         entry.get().value().setSyncable(true);
@@ -69,10 +69,10 @@ public final class KevsAttributesPanel {
             }
 
             for (String attrIdStr : config.percentAttributes) {
-                var id = ResourceLocation.tryParse(attrIdStr);
+                var id = Identifier.tryParse(attrIdStr);
                 if (id == null) continue;
 
-                var entry = BuiltInRegistries.ATTRIBUTE.getHolder(id);
+                var entry = BuiltInRegistries.ATTRIBUTE.get(id);
                 if (entry.isPresent()) {
                     try {
                         entry.get().value().setSyncable(true);

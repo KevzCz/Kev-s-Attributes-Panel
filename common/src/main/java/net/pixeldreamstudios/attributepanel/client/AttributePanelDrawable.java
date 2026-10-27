@@ -1,5 +1,7 @@
 package net.pixeldreamstudios.attributepanel.client;
 
+import org.joml.Matrix3x2fStack;
+
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.api.EnvType;
@@ -14,10 +16,11 @@ import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -52,7 +55,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
 
     protected List<Component> queuedTooltip = null;
     protected List<ItemStack> queuedTooltipIcons = null;
-    protected List<ResourceLocation> queuedTooltipTextures = null;
+    protected List<Identifier> queuedTooltipTextures = null;
     protected int tooltipX, tooltipY;
 
     private final BookAttributePanelDrawable bookGui;
@@ -60,7 +63,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
     private final CompactAttributePanelDrawable compactGui;
     
     protected final AttributeAnimationState animationState = new AttributeAnimationState();
-    private final Map<ResourceLocation, Double> lastKnownValues = new HashMap<>();
+    private final Map<Identifier, Double> lastKnownValues = new HashMap<>();
 
     public AttributePanelDrawable(int x, int y, int width) {
         this.x = x;
@@ -129,28 +132,27 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
 
     public void renderLate(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!expanded) return;
-        PoseStack pose = context.pose();
-        pose.pushPose();
-        pose.translate(0, 0, PANEL_Z_OFFSET);
-        context.flush();
-        RenderSystem.depthMask(false);
+        var pose = context.pose();
+        pose.pushMatrix();
+        pose.translate(0, 0);
         switch (AttributesPanelConfig.INSTANCE.guiStyle) {
             case BOOK -> bookGui.render(context, mouseX, mouseY, delta);
             case VANILLA -> vanillaGui.render(context, mouseX, mouseY, delta);
             case COMPACT -> compactGui.render(context, mouseX, mouseY, delta);
         }
-        context.flush();
-        RenderSystem.depthMask(true);
-        pose.popPose();
+        pose.popMatrix();
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (!expanded) return false;
         return switch (AttributesPanelConfig.INSTANCE.guiStyle) {
-            case BOOK -> bookGui.mouseClicked(mouseX, mouseY, button);
-            case VANILLA -> vanillaGui.mouseClicked(mouseX, mouseY, button);
-            case COMPACT -> compactGui.mouseClicked(mouseX, mouseY, button);
+            case BOOK -> bookGui.mouseClicked(event, doubleClick);
+            case VANILLA -> vanillaGui.mouseClicked(event, doubleClick);
+            case COMPACT -> compactGui.mouseClicked(event, doubleClick);
         };
     }
 
@@ -165,22 +167,28 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double deltaX, double deltaY) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (!expanded) return false;
         return switch (AttributesPanelConfig.INSTANCE.guiStyle) {
             case BOOK -> false;
             case VANILLA -> false;
-            case COMPACT -> compactGui.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+            case COMPACT -> compactGui.mouseDragged(event, deltaX, deltaY);
         };
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (!expanded) return false;
         return switch (AttributesPanelConfig.INSTANCE.guiStyle) {
             case BOOK -> false;
             case VANILLA -> false;
-            case COMPACT -> compactGui.mouseReleased(mouseX, mouseY, button);
+            case COMPACT -> compactGui.mouseReleased(event);
         };
     }
 
@@ -215,15 +223,11 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
     public void renderImprintWindowLate(GuiGraphics context) {
         if (!expanded) return;
         if (AttributesPanelConfig.INSTANCE.guiStyle == AttributesPanelConfig.GuiStyle.COMPACT) {
-            PoseStack pose = context.pose();
-            pose.pushPose();
-            pose.translate(0, 0, PANEL_Z_OFFSET);
-            context.flush();
-            RenderSystem.depthMask(false);
+            var pose = context.pose();
+            pose.pushMatrix();
+            pose.translate(0, 0);
             compactGui.renderImprintWindowLate(context);
-            context.flush();
-            RenderSystem.depthMask(true);
-            pose.popPose();
+            pose.popMatrix();
         }
     }
 
@@ -232,9 +236,9 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         Font font = client.font;
         int zOffset = 400;
 
-        PoseStack pose = context.pose();
-        pose.pushPose();
-        pose.translate(0, 0, zOffset);
+        var pose = context.pose();
+        pose.pushMatrix();
+        pose.translate(0, 0);
 
         List<Component> lines = queuedTooltip;
         List<ItemStack> icons = queuedTooltipIcons;
@@ -267,12 +271,12 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             drawVanillaTooltip(context, pose, font, lines, icons, drawX, drawY, tooltipWidth, tooltipHeight);
         }
 
-        pose.popPose();
+        pose.popMatrix();
         queuedTooltip = null;
         queuedTooltipIcons = null;
     }
 
-    private void drawVanillaTooltip(GuiGraphics context, PoseStack pose, Font font, List<Component> lines, 
+    private void drawVanillaTooltip(GuiGraphics context, Matrix3x2fStack pose, Font font, List<Component> lines, 
                                      List<ItemStack> icons, int drawX, int drawY, int tooltipWidth, int tooltipHeight) {
         int backgroundColor = 0xF0131313;
         int borderColor = 0xFF5A5A5A;
@@ -289,7 +293,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             ItemStack icon = (queuedTooltipIcons != null && i < queuedTooltipIcons.size())
                     ? queuedTooltipIcons.get(i) : ItemStack.EMPTY;
 
-            ResourceLocation tex = (queuedTooltipTextures != null && i < queuedTooltipTextures.size())
+            Identifier tex = (queuedTooltipTextures != null && i < queuedTooltipTextures.size())
                     ? queuedTooltipTextures.get(i) : null;
 
             int iconOffset = 0;
@@ -299,11 +303,11 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
                 context.blit(tex, drawX, lineY, 0, 0, texSize, texSize, texSize, texSize);
                 iconOffset = 18;
             } else if (!icon.isEmpty()) {
-                pose.pushPose();
-                pose.translate(drawX, lineY + iconYOffset(icon), 0);
-                pose.scale(0.85f, 0.85f, 1f);
+                pose.pushMatrix();
+                pose.translate(drawX, lineY + iconYOffset(icon));
+                pose.scale(0.85f, 0.85f);
                 context.renderItem(icon, 0, 0);
-                pose.popPose();
+                pose.popMatrix();
                 iconOffset = 18;
             }
 
@@ -312,7 +316,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         }
     }
 
-    private void drawFantasyTooltip(GuiGraphics context, PoseStack pose, Font font, List<Component> lines,
+    private void drawFantasyTooltip(GuiGraphics context, Matrix3x2fStack pose, Font font, List<Component> lines,
                                      List<ItemStack> icons, int drawX, int drawY, int tooltipWidth, int tooltipHeight) {
         int bgDark = 0xF0201510;
         int bgLight = 0xF0382820;
@@ -352,7 +356,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             ItemStack icon = (queuedTooltipIcons != null && i < queuedTooltipIcons.size())
                     ? queuedTooltipIcons.get(i) : ItemStack.EMPTY;
 
-            ResourceLocation tex = (queuedTooltipTextures != null && i < queuedTooltipTextures.size())
+            Identifier tex = (queuedTooltipTextures != null && i < queuedTooltipTextures.size())
                     ? queuedTooltipTextures.get(i) : null;
 
             int iconOffset = 0;
@@ -364,11 +368,11 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
                 iconOffset = 18;
             } else if (!icon.isEmpty()) {
                 context.fill(drawX - 1, lineY - 1, drawX + 15, lineY + 15, 0x20FFAA00);
-                pose.pushPose();
-                pose.translate(drawX, lineY + iconYOffset(icon), 0);
-                pose.scale(0.85f, 0.85f, 1f);
+                pose.pushMatrix();
+                pose.translate(drawX, lineY + iconYOffset(icon));
+                pose.scale(0.85f, 0.85f);
                 context.renderItem(icon, 0, 0);
-                pose.popPose();
+                pose.popMatrix();
                 iconOffset = 18;
             }
 
@@ -383,12 +387,12 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         Player player = client.player;
         if (player == null) return;
 
-        for (Holder<Attribute> entry : BuiltInRegistries.ATTRIBUTE.holders().toList()) {
+        for (Holder<Attribute> entry : BuiltInRegistries.ATTRIBUTE.listElements().toList()) {
             Attribute attr = entry.value();
             AttributeInstance instance = player.getAttribute(entry);
             if (instance == null) continue;
 
-            ResourceLocation attrId = BuiltInRegistries.ATTRIBUTE.getKey(attr);
+            Identifier attrId = BuiltInRegistries.ATTRIBUTE.getKey(attr);
             String idStr = attrId == null ? "" : attrId.toString();
             String tkey = attr.getDescriptionId().toLowerCase(Locale.ROOT);
 
@@ -504,7 +508,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         enqueueTooltipRich(lines, icons, null, mouseX, mouseY);
     }
 
-    protected void enqueueTooltipRich(List<Component> lines, List<ItemStack> icons, List<ResourceLocation> textures, int mouseX, int mouseY) {
+    protected void enqueueTooltipRich(List<Component> lines, List<ItemStack> icons, List<Identifier> textures, int mouseX, int mouseY) {
         this.queuedTooltip = lines;
         this.queuedTooltipIcons = icons;
         this.queuedTooltipTextures = textures;
@@ -513,21 +517,26 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
+        char chr = event.codepointAsString().isEmpty() ? 0 : event.codepointAsString().charAt(0);
+        int modifiers = event.modifiers();
         if (compactGui.wantsKeys()) {
             if (compactGui.handleCharTyped(chr, modifiers)) return true;
             return true;
         }
-        return GuiEventListener.super.charTyped(chr, modifiers);
+        return GuiEventListener.super.charTyped(event);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         if (compactGui.wantsKeys()) {
             if (compactGui.handleKeyPressed(keyCode, scanCode, modifiers)) return true;
             return true;
         }
-        return GuiEventListener.super.keyPressed(keyCode, scanCode, modifiers);
+        return GuiEventListener.super.keyPressed(event);
     }
 
     public void drawTooltipContent(GuiGraphics context,
@@ -559,7 +568,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         if (! onValue) return;
 
         boolean shiftDown = GLFW.glfwGetKey(
-                Minecraft.getInstance().getWindow().getWindow(),
+                Minecraft.getInstance().getWindow().handle(),
                 client.options.keyShift.getDefaultKey().getValue()
         ) == GLFW.GLFW_PRESS;
 
@@ -598,7 +607,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             iconStacks.add(ItemStack.EMPTY);
 
             for (AttributeModifier mod : instance.getModifiers()) {
-                ResourceLocation rawId = mod.id();
+                Identifier rawId = mod.id();
 
                 if (rawId.getNamespace().equals("tiered")) {
                     String fullPath = rawId.getPath();
@@ -606,7 +615,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
 
                     if (tieredParts.length >= 3 && tieredParts[tieredParts.length - 1].contains("_")) {
                         fullPath = tieredParts[tieredParts.length - 1];
-                        rawId = ResourceLocation.fromNamespaceAndPath("tiered", fullPath);
+                        rawId = Identifier.fromNamespaceAndPath("tiered", fullPath);
                     }
                 }
 
@@ -664,10 +673,10 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
 
                 String fullPath = rawId.getPath();
                 String[] parts = fullPath.split("\\.", 2);
-                ResourceLocation modId = ResourceLocation.fromNamespaceAndPath(rawId.getNamespace(), parts[0]);
+                Identifier modId = Identifier.fromNamespaceAndPath(rawId.getNamespace(), parts[0]);
                 String customName = parts.length > 1 ? parts[1] : null;
                 boolean usedCustomName = false;
-                ItemStack matchingStack = new ItemStack(BuiltInRegistries.ITEM.get(modId));
+                ItemStack matchingStack = BuiltInRegistries.ITEM.get(modId).map(ItemStack::new).orElse(ItemStack.EMPTY);
                 Component displayName = Component.literal(formatModifierId(modId));
                 boolean foundSource = false;
 
@@ -688,7 +697,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
                     }
 
                     if (!matched[0]) {
-                        var defaultMods = stack.getItem().getDefaultAttributeModifiers();
+                        var defaultMods = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
                         defaultMods.modifiers().forEach(entry -> {
                             if (entry.slot().test(slot) &&
                                     entry.modifier().id().equals(mod.id()) &&
@@ -716,9 +725,9 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
                     String[] pathParts = modId.getPath().split("/");
                     if (pathParts.length > 0) {
                         String itemGuess = pathParts[pathParts.length - 1];
-                        ResourceLocation itemId = ResourceLocation.fromNamespaceAndPath(modId.getNamespace(), itemGuess);
+                        Identifier itemId = Identifier.fromNamespaceAndPath(modId.getNamespace(), itemGuess);
                         if (BuiltInRegistries.ITEM.containsKey(itemId)) {
-                            Item item = BuiltInRegistries.ITEM.get(itemId);
+                            Item item = BuiltInRegistries.ITEM.get(itemId).orElseThrow().value();
                             matchingStack = new ItemStack(item);
                             displayName = matchingStack.getHoverName().copy().withStyle(matchingStack.getRarity().color());
                             foundSource = true;
@@ -964,7 +973,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
         return stack;
     }
 
-    protected static String formatModifierId(ResourceLocation id) {
+    protected static String formatModifierId(Identifier id) {
         String path = id.getPath();
         if (path.contains("/")) path = path.substring(0, path.indexOf('/'));
         String[] parts = path.split("_");

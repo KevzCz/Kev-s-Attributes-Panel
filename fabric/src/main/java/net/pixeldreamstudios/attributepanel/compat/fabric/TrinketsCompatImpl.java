@@ -7,7 +7,7 @@ import dev.emi.trinkets.api.TrinketComponent;
 import dev.emi.trinkets.api.TrinketsApi;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
@@ -48,7 +48,7 @@ public class TrinketsCompatImpl {
             for (Map.Entry<Holder<Attribute>, AttributeModifier> entry : entries) {
                 Holder<Attribute> attribute = entry.getKey();
                 AttributeModifier modifier = entry.getValue();
-                ResourceLocation rawId = modifier.id();
+                Identifier rawId = modifier.id();
 
                 results.add(new TrinketsCompat.TrinketModifierSource(
                         stack,
