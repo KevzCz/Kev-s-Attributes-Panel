@@ -52,6 +52,7 @@ dependencies {
     // Tiered More (Architectury build) — local jar until the new arch version is published on CurseForge.
     // Old ref was: modCompileOnly "curse.maven:tiered-more-1275090:8362003"
     modCompileOnly name: 'tiered_more-fabric-1.2.1'
+    modCompileOnly files("$rootDir/lib/Origins-1.13.0-pre.3+mc.1.21.1.jar", "$rootDir/lib/apoli-2.12.0-pre.3+mc.1.21.1.jar", "$rootDir/lib/calio-1.14.0+mc.1.21.x.jar")
 }
 
 processResources {

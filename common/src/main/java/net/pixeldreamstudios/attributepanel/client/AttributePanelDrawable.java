@@ -296,7 +296,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
 
             if (tex != null) {
                 final int texSize = 12;
-                context.blit(tex, drawX, lineY, 0, 0, texSize, texSize, texSize, texSize);
+                AnimatedTextures.blit(context, tex, drawX, lineY, texSize, texSize);
                 iconOffset = 18;
             } else if (!icon.isEmpty()) {
                 pose.pushPose();
@@ -360,7 +360,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             if (tex != null) {
                 final int texSize = 12;
                 context.fill(drawX - 1, lineY - 1, drawX + texSize + 1, lineY + texSize + 1, 0x30FFD700);
-                context.blit(tex, drawX, lineY, 0, 0, texSize, texSize, texSize, texSize);
+                AnimatedTextures.blit(context, tex, drawX, lineY, texSize, texSize);
                 iconOffset = 18;
             } else if (!icon.isEmpty()) {
                 context.fill(drawX - 1, lineY - 1, drawX + 15, lineY + 15, 0x20FFAA00);

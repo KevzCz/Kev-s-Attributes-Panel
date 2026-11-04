@@ -1,5 +1,2 @@
-Added an optional Effects Header (Disabled by Default)
-
-This would also come with a compat with EMIffect mod!
-
-Fixes searchbar not typeable in creative mode
+Improved GUI rendering so that resourcepacks can now animate panel's textures
+Added Origins Compat to Fabric

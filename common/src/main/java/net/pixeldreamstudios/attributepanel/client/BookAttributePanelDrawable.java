@@ -57,7 +57,7 @@ class BookAttributePanelDrawable {
         int rowHeight = 20;
         int padding = 20;
 
-        context.blit(BOOK_TEXTURE, root.left() - 25, root.top(), 0, 0, 240, 230, 240, 230);
+        AnimatedTextures.blit(context, BOOK_TEXTURE, root.left() - 25, root.top(), 240, 230);
 
         int visibleRows = AttributePanelDrawable.MAX_ROWS;
         int totalPages = (int) Math.ceil(root.getCachedStats().size() / (float) visibleRows);
@@ -142,9 +142,7 @@ class BookAttributePanelDrawable {
         int infoX = root.left() + root.panelWidth() - INFO_ICON_SIZE - 95;
         int infoY = root.top() + 10;
 
-        context.blit(INFO_ICON, infoX, infoY,
-                0, 0, INFO_ICON_SIZE, INFO_ICON_SIZE,
-                INFO_ICON_SIZE, INFO_ICON_SIZE);
+        AnimatedTextures.blit(context, INFO_ICON, infoX, infoY, INFO_ICON_SIZE, INFO_ICON_SIZE);
 
         if (mouseX >= infoX && mouseX <= infoX + INFO_ICON_SIZE
                 && mouseY >= infoY && mouseY <= infoY + INFO_ICON_SIZE) {
