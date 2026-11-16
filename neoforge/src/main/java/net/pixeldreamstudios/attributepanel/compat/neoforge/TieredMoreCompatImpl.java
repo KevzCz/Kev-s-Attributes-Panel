@@ -17,7 +17,7 @@ import java.util.List;
 public class TieredMoreCompatImpl {
 
     public static boolean isLoaded() {
-        return ModList.get().isLoaded("tiered_more");
+        return false;
     }
 
     public static List<TieredMoreCompat.ImprintState> getActiveImprintsImpl(Player player) {

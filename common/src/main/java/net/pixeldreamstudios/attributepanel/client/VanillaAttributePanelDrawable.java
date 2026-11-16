@@ -5,15 +5,15 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
 @Environment(EnvType.CLIENT)
 class VanillaAttributePanelDrawable {
     private final AttributePanelDrawable root;
 
-    private static final ResourceLocation NAME_BG = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/light_gray_concrete.png");
-    private static final ResourceLocation VALUE_BG = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/gray_concrete.png");
+    private static final Identifier NAME_BG = Identifier.fromNamespaceAndPath("minecraft", "textures/block/light_gray_concrete.png");
+    private static final Identifier VALUE_BG = Identifier.fromNamespaceAndPath("minecraft", "textures/block/gray_concrete.png");
 
     VanillaAttributePanelDrawable(AttributePanelDrawable root) {
         this.root = root;
@@ -112,7 +112,10 @@ class VanillaAttributePanelDrawable {
         drawVanillaTooltipButton(context, font, hoverIndex, mouseX, mouseY, rowHeight, padding);
     }
 
-    boolean mouseClicked(double mouseX, double mouseY, int button) {
+    boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         int btnY = root.top() + root.panelHeight() - 12;
 
         String prevText = "« Prev";

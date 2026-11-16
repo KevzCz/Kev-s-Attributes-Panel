@@ -45,7 +45,7 @@ public class AttributeDescriptionProvider {
         }
 
         boolean advancedTooltips = isAdvancedTooltipsEnabled();
-        boolean shiftDown = Screen.hasShiftDown();
+        boolean shiftDown = PanelKeys.hasShiftDown();
         if (advancedTooltips || shiftDown) {
             lines.add(Component.literal(id).withStyle(ChatFormatting.DARK_GRAY));
             icons.add(ItemStack.EMPTY);

@@ -28,15 +28,15 @@ public abstract class CreativeScreenKeyMixin {
     }
 
     @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true)
-    private void attributespanel$onCharTyped(char chr, int modifiers, CallbackInfoReturnable<Boolean> cir) {
+    private void attributespanel$onCharTyped(net.minecraft.client.input.CharacterEvent event, CallbackInfoReturnable<Boolean> cir) {
         AttributePanelDrawable panel = attributespanel$typingPanel();
-        if (panel != null) cir.setReturnValue(panel.charTyped(chr, modifiers));
+        if (panel != null) cir.setReturnValue(panel.charTyped(event));
     }
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
-    private void attributespanel$onKeyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE) return;
+    private void attributespanel$onKeyPressed(net.minecraft.client.input.KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
+        if (event.key() == GLFW.GLFW_KEY_ESCAPE) return;
         AttributePanelDrawable panel = attributespanel$typingPanel();
-        if (panel != null) cir.setReturnValue(panel.keyPressed(keyCode, scanCode, modifiers));
+        if (panel != null) cir.setReturnValue(panel.keyPressed(event));
     }
 }

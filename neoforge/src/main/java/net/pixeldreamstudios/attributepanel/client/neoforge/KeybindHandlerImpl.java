@@ -21,7 +21,7 @@ public class KeybindHandlerImpl {
         quickOpenKeybind = new KeyMapping(
                 "key.kevs_attributes_panel.quick_open",
                 GLFW.GLFW_KEY_UNKNOWN,
-                "key.categories.kevs_attributes_panel"
+                net.minecraft.client.KeyMapping.Category.register(net.minecraft.resources.Identifier.fromNamespaceAndPath("kevs_attributes_panel", "category"))
         );
         event.register(quickOpenKeybind);
         

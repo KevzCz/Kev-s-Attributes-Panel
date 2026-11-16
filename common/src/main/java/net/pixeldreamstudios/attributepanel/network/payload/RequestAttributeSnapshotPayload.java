@@ -3,13 +3,13 @@ package net.pixeldreamstudios.attributepanel.network.payload;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import static net.pixeldreamstudios.attributepanel.KevsAttributesPanel.MOD_ID;
 
 public record RequestAttributeSnapshotPayload(String targetName) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<RequestAttributeSnapshotPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(MOD_ID, "request_attribute_snapshot"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "request_attribute_snapshot"));
 
     public static final StreamCodec<FriendlyByteBuf, RequestAttributeSnapshotPayload> STREAM_CODEC =
             StreamCodec.of(RequestAttributeSnapshotPayload:: write, RequestAttributeSnapshotPayload::read);

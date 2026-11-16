@@ -15,7 +15,7 @@ public class ServerNetworkHandler {
         KevsAttributesPanel.LOGGER.info("Received snapshot request from {} for target: {}",
                 requester.getName().getString(), targetName);
 
-        ServerPlayer target = requester.server
+        ServerPlayer target = requester.level().getServer()
                 .getPlayerList()
                 .getPlayerByName(targetName);
 
@@ -23,7 +23,7 @@ public class ServerNetworkHandler {
             KevsAttributesPanel.LOGGER.info("Found target player: {}", targetName);
             CompoundTag snapshot = AttributeDataSerializer.serialize(target);
 
-            KevsAttributesPanel.LOGGER.info("Serialized {} attributes", snapshot.getAllKeys().size());
+            KevsAttributesPanel.LOGGER.info("Serialized {} attributes", snapshot.keySet().size());
 
             NetworkManager.sendToClient(requester, new SendAttributeSnapshotPayload(
                     target.getName().getString(),
@@ -31,7 +31,7 @@ public class ServerNetworkHandler {
             ));
         } else {
             KevsAttributesPanel.LOGGER.warn("Could not find player:  {}", targetName);
-            requester.sendSystemMessage(Component.literal("Could not find player: " + targetName));
+            requester.displayClientMessage(Component.literal("Could not find player: " + targetName), false);
         }
     }
 }

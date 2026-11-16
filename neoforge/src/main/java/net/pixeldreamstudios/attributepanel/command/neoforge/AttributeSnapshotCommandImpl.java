@@ -13,7 +13,7 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -76,10 +76,10 @@ public class AttributeSnapshotCommandImpl {
         RequestAttributeSnapshotPayload payload = new RequestAttributeSnapshotPayload(targetName);
         NetworkManager.sendToServer(payload);
 
-        player.sendSystemMessage(
+        player.displayClientMessage(
                 Component.literal("Requested attribute snapshot for: " + targetName)
                         .withStyle(ChatFormatting.GRAY)
-        );
+        , false);
 
         return 1;
     }
@@ -91,23 +91,23 @@ public class AttributeSnapshotCommandImpl {
             return 0;
         }
 
-        ResourceLocation attrResourceLocation;
+        Identifier attrResourceLocation;
         try {
-            attrResourceLocation = ResourceLocation.parse(attributeId);
+            attrResourceLocation = Identifier.parse(attributeId);
         } catch (Exception e) {
-            player.sendSystemMessage(
+            player.displayClientMessage(
                     Component.literal("Invalid attribute ID:  " + attributeId)
                             .withStyle(ChatFormatting.RED)
-            );
+            , false);
             return 0;
         }
 
-        Holder.Reference<Attribute> attrHolder = BuiltInRegistries.ATTRIBUTE.getHolder(attrResourceLocation).orElse(null);
+        Holder.Reference<Attribute> attrHolder = BuiltInRegistries.ATTRIBUTE.get(attrResourceLocation).orElse(null);
         if (attrHolder == null) {
-            player.sendSystemMessage(
+            player.displayClientMessage(
                     Component.literal("Attribute not found: " + attributeId)
                             .withStyle(ChatFormatting.RED)
-            );
+            , false);
             return 0;
         }
 
@@ -115,41 +115,41 @@ public class AttributeSnapshotCommandImpl {
         AttributeInstance instance = player.getAttribute(attrHolder);
 
         if (instance == null) {
-            player.sendSystemMessage(
+            player.displayClientMessage(
                     Component.literal("You don't have this attribute: " + attributeId)
                             .withStyle(ChatFormatting.RED)
-            );
+            , false);
             return 0;
         }
 
-        player.sendSystemMessage(
+        player.displayClientMessage(
                 Component.literal("=== Modifiers for: ")
                         .append(Component.translatable(attribute.getDescriptionId()))
                         .append(" ===")
                         .withStyle(ChatFormatting.GOLD)
-        );
+        , false);
 
-        player.sendSystemMessage(
+        player.displayClientMessage(
                 Component.literal("Base Value: " + String.format("%.2f", instance.getBaseValue()))
                         .withStyle(ChatFormatting.YELLOW)
-        );
-        player.sendSystemMessage(
+        , false);
+        player.displayClientMessage(
                 Component.literal("Final Value: " + String.format("%.2f", instance.getValue()))
                         .withStyle(ChatFormatting.AQUA)
-        );
+        , false);
 
         Collection<AttributeModifier> modifiers = instance.getModifiers();
 
         if (modifiers.isEmpty()) {
-            player.sendSystemMessage(
+            player.displayClientMessage(
                     Component.literal("No modifiers found.")
                             .withStyle(ChatFormatting.GRAY)
-            );
+            , false);
             return 1;
         }
 
-        player.sendSystemMessage(Component.literal(""));
-        player.sendSystemMessage(Component.literal("Modifiers:").withStyle(ChatFormatting.YELLOW));
+        player.displayClientMessage(Component.literal(""), false);
+        player.displayClientMessage(Component.literal("Modifiers:").withStyle(ChatFormatting.YELLOW), false);
 
         Map<AttributeModifier.Operation, List<AttributeModifier>> grouped = new HashMap<>();
         for (AttributeModifier mod : modifiers) {
@@ -157,21 +157,21 @@ public class AttributeSnapshotCommandImpl {
         }
 
         if (grouped.containsKey(AttributeModifier.Operation.ADD_VALUE)) {
-            player.sendSystemMessage(Component.literal("  Flat Additions:").withStyle(ChatFormatting.GREEN));
+            player.displayClientMessage(Component.literal("  Flat Additions:").withStyle(ChatFormatting.GREEN), false);
             for (AttributeModifier mod : grouped.get(AttributeModifier.Operation.ADD_VALUE)) {
                 displayModifier(player, mod, attrHolder);
             }
         }
 
         if (grouped.containsKey(AttributeModifier.Operation.ADD_MULTIPLIED_BASE)) {
-            player.sendSystemMessage(Component.literal("  Base Multipliers:").withStyle(ChatFormatting.BLUE));
+            player.displayClientMessage(Component.literal("  Base Multipliers:").withStyle(ChatFormatting.BLUE), false);
             for (AttributeModifier mod : grouped.get(AttributeModifier.Operation.ADD_MULTIPLIED_BASE)) {
                 displayModifier(player, mod, attrHolder);
             }
         }
 
         if (grouped.containsKey(AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL)) {
-            player.sendSystemMessage(Component.literal("  Total Multipliers:").withStyle(ChatFormatting.LIGHT_PURPLE));
+            player.displayClientMessage(Component.literal("  Total Multipliers:").withStyle(ChatFormatting.LIGHT_PURPLE), false);
             for (AttributeModifier mod :  grouped.get(AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL)) {
                 displayModifier(player, mod, attrHolder);
             }
@@ -184,15 +184,15 @@ public class AttributeSnapshotCommandImpl {
         String opText = formatModifier(mod);
         String source = guessSource(mod.id(), player, attrHolder);
 
-        player.sendSystemMessage(
+        player.displayClientMessage(
                 Component.literal("    • " + opText)
                         .append(Component.literal(" - " + source).withStyle(ChatFormatting.GRAY))
                         .append(Component.literal(" (ID: " + mod.id() + ")").withStyle(ChatFormatting.DARK_GRAY))
                         .withStyle(ChatFormatting.WHITE)
-        );
+        , false);
     }
 
-    private static String guessSource(ResourceLocation modId, LocalPlayer player, Holder<Attribute> attrHolder) {
+    private static String guessSource(Identifier modId, LocalPlayer player, Holder<Attribute> attrHolder) {
         String namespace = modId.getNamespace();
         String path = modId.getPath();
 

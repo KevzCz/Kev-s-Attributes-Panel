@@ -4,7 +4,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -15,12 +15,12 @@ public class AttributeDataSerializer {
     public static CompoundTag serialize(Player player) {
         CompoundTag root = new CompoundTag();
 
-        for (Holder<Attribute> attributeHolder : BuiltInRegistries.ATTRIBUTE.holders().toList()) {
+        for (Holder<Attribute> attributeHolder : BuiltInRegistries.ATTRIBUTE.listElements().toList()) {
             AttributeInstance instance = player.getAttribute(attributeHolder);
             if (instance == null) continue;
 
-            ResourceLocation id = attributeHolder.unwrapKey()
-                    .map(key -> key.location())
+            Identifier id = attributeHolder.unwrapKey()
+                    .map(key -> key.identifier())
                     .orElse(null);
 
             if (id == null) continue;

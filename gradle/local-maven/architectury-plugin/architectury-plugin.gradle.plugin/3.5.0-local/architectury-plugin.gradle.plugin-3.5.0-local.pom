@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>architectury-plugin</groupId>
+  <artifactId>architectury-plugin.gradle.plugin</artifactId>
+  <version>3.5.0-local</version>
+  <!-- minimal POM: the jar is self-contained; runtime deps are declared
+       explicitly in the consumer buildscript classpath -->
+</project>

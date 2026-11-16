@@ -1,7 +1,7 @@
 package net.pixeldreamstudios.attributepanel.neoforge;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
@@ -28,7 +28,7 @@ public final class KevsAttributesPanelNeoforge {
     private void addPackFinders(AddPackFindersEvent event) {
         if (event.getPackType() == PackType.CLIENT_RESOURCES) {
             event.addPackFinders(
-                    ResourceLocation.fromNamespaceAndPath(KevsAttributesPanel.MOD_ID, "resourcepacks/kap_minimal_dark"),
+                    Identifier.fromNamespaceAndPath(KevsAttributesPanel.MOD_ID, "resourcepacks/kap_minimal_dark"),
                     PackType.CLIENT_RESOURCES,
                     Component.literal("KAP Minimal Dark"),
                     PackSource.BUILT_IN,
@@ -37,7 +37,7 @@ public final class KevsAttributesPanelNeoforge {
             );
 
             event.addPackFinders(
-                    ResourceLocation.fromNamespaceAndPath(KevsAttributesPanel.MOD_ID, "resourcepacks/kevs_attributes_panel_old"),
+                    Identifier.fromNamespaceAndPath(KevsAttributesPanel.MOD_ID, "resourcepacks/kevs_attributes_panel_old"),
                     PackType.CLIENT_RESOURCES,
                     Component.literal("Old Panel Icons"),
                     PackSource.BUILT_IN,
