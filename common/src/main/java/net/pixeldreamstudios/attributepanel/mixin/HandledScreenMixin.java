@@ -127,7 +127,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
                 context.blit(ATTRIBUTE_BOOK, 0, 0, 0, 0, iconSize, iconSize, 9, 9);
                 pose.popMatrix();
             } else {
-                context.blit(ATTRIBUTE_BOOK, buttonX, buttonY, 0, 0, iconSize, iconSize, 9, 9);
+                AnimatedTextures.blit(context, ATTRIBUTE_BOOK, buttonX, buttonY, iconSize, iconSize);
             }
 
 

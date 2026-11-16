@@ -1,5 +1,6 @@
 package net.pixeldreamstudios.attributepanel.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.ChatFormatting;
@@ -44,6 +45,7 @@ import net.pixeldreamstudios.attributepanel.compat.AccessoriesCompat;
 import net.pixeldreamstudios.attributepanel.compat.CuriosCompat;
 import net.pixeldreamstudios.attributepanel.compat.EmiCompat;
 import net.pixeldreamstudios.attributepanel.compat.IconLeadingCompat;
+import net.pixeldreamstudios.attributepanel.compat.OriginsCompat;
 import net.pixeldreamstudios.attributepanel.compat.TieredMoreCompat;
 import net.pixeldreamstudios.attributepanel.compat.TrinketsCompat;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
@@ -288,7 +290,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         int bgW = root.panelWidth() + 16;
         int bgH = root.panelHeight();
 
-        ctx.blit(BACKGROUND_TEXTURE, bgX, bgY, 0, 0, bgW, bgH, bgW, bgH);
+        AnimatedTextures.blit(ctx, BACKGROUND_TEXTURE, bgX, bgY, bgW, bgH);
 
         buildLayout();
         effectHits.clear();
@@ -308,7 +310,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         int iconsY = bgY + 9;
 
         int searchX = bgX + 7;
-        ctx.blit(SEARCH_ICON, searchX, iconsY, 0, 0, SEARCH_ICON_SIZE, SEARCH_ICON_SIZE, SEARCH_ICON_SIZE, SEARCH_ICON_SIZE);
+        AnimatedTextures.blit(ctx, SEARCH_ICON, searchX, iconsY, SEARCH_ICON_SIZE, SEARCH_ICON_SIZE);
         if (mouseX >= searchX && mouseX <= searchX + SEARCH_ICON_SIZE &&
                 mouseY >= iconsY && mouseY <= iconsY + SEARCH_ICON_SIZE) {
             root.enqueueTooltip(List.of(Component.translatable("attributepanel.search.tooltip", "Search Attributes")),
@@ -316,7 +318,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         }
 
         int infoX = bgX + bgW - INFO_ICON_SIZE - 7;
-        ctx.blit(INFO_ICON, infoX, iconsY, 0, 0, INFO_ICON_SIZE, INFO_ICON_SIZE, INFO_ICON_SIZE, INFO_ICON_SIZE);
+        AnimatedTextures.blit(ctx, INFO_ICON, infoX, iconsY, INFO_ICON_SIZE, INFO_ICON_SIZE);
 
         hoveringInfoIcon = mouseX >= infoX && mouseX <= infoX + INFO_ICON_SIZE &&
                 mouseY >= iconsY && mouseY <= iconsY + INFO_ICON_SIZE;
@@ -1161,7 +1163,12 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                         }
                     } catch (Exception ignored) {}
                 }
-                if (customName != null && !customName.isBlank() && !"dungeon_difficulty".equals(rawId.getNamespace()) && !"morequesttypes".equals(rawId.getNamespace())) {
+                Optional<OriginsCompat.Source> originSource = foundSource ? Optional.empty() : OriginsCompat.findSource(player, rawId);
+                if (originSource.isPresent()) {
+                    displayName = originSource.get().name().copy().withStyle(ChatFormatting.LIGHT_PURPLE);
+                    iconStack = originSource.get().icon();
+                    foundSource = true;
+                } else if (customName != null && !customName.isBlank() && !"dungeon_difficulty".equals(rawId.getNamespace()) && !"morequesttypes".equals(rawId.getNamespace())) {
                     Set<String> ignoredArmorNames = Set.of("helmet", "chestplate", "leggings", "boots");
                     if (!ignoredArmorNames.contains(customName.toLowerCase(Locale.ROOT))) {
                         String pretty = Arrays.stream(customName.split("_"))
@@ -2339,13 +2346,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         int dividerX = center - (DIVIDER_TEXTURE_W / 2);
         dividerX = Math.max(innerX, Math.min(dividerX, innerX + innerW - DIVIDER_TEXTURE_W));
         int dividerY = y + (DIVIDER_TOTAL_H - DIVIDER_TEXTURE_H) / 2;
-        ctx.blit(
-                DIVIDER_TEXTURE,
-                dividerX, dividerY,
-                0, 0,
-                DIVIDER_TEXTURE_W, DIVIDER_TEXTURE_H,
-                DIVIDER_TEXTURE_W, DIVIDER_TEXTURE_H
-        );
+        AnimatedTextures.blit(ctx, DIVIDER_TEXTURE, dividerX, dividerY, DIVIDER_TEXTURE_W, DIVIDER_TEXTURE_H);
     }
 
     private void drawHeader(GuiGraphics ctx, Font font, int innerX, int innerW, int y, HeaderLayout header) {
@@ -2389,7 +2390,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         int x = startX;
 
         if (iconAvailable) {
-            ctx.blit(header.headerIcon, x, y, 0, 0, HEADER_ICON_SIZE, HEADER_ICON_SIZE, HEADER_ICON_SIZE, HEADER_ICON_SIZE);
+            AnimatedTextures.blit(ctx, header.headerIcon, x, y, HEADER_ICON_SIZE, HEADER_ICON_SIZE);
             x += HEADER_ICON_SIZE + 3;
         }
 
@@ -2806,8 +2807,19 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         int left = (int) Math.floor(g.x);
         int right = (int) Math.ceil(g.x + g.w);
 
-        ctx.fill(left, g.y, right, g.y + g.h, 0x66000000);
-        ctx.fill(left, g.knobY, right, g.knobY + g.knobH, 0xCCFFFFFF);
+        drawScrollbarPart(ctx, SCROLLBAR_TRACK, left, g.y, right - left, g.h, SCROLLBAR_TRACK_COLOR);
+        drawScrollbarPart(ctx, SCROLLBAR_KNOB, left, g.knobY, right - left, g.knobH, SCROLLBAR_KNOB_COLOR);
+    }
+
+    private static void drawScrollbarPart(GuiGraphics ctx, ResourceLocation texture, int x, int y, int width, int height, int fallbackColor) {
+        if (!AnimatedTextures.exists(texture)) {
+            ctx.fill(x, y, x + width, y + height, fallbackColor);
+            return;
+        }
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        AnimatedTextures.blitScaled(ctx, texture, x, y, width, height);
+        RenderSystem.disableBlend();
     }
 
     private BarGeom computeBarGeom() {
