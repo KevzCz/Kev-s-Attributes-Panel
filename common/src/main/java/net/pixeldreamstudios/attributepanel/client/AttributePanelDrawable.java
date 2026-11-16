@@ -672,7 +672,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
                 boolean foundSource = false;
 
                 for (EquipmentSlot slot : EquipmentSlot.values()) {
-                    ItemStack stack = client.player.getSlot(slot.getIndex()).get();
+                    ItemStack stack = client.player.getItemBySlot(slot);
                     if (stack.isEmpty()) continue;
 
                     final boolean[] matched = {false};

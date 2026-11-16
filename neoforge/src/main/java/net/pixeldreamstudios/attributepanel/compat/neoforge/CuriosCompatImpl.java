@@ -11,7 +11,6 @@ import net.neoforged.fml.ModList;
 import net.pixeldreamstudios.attributepanel.compat.CuriosCompat;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.SlotContext;
-import top.theillusivec4.curios.api.type.capability.ICurioItem;
 import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 
@@ -44,24 +43,21 @@ public class CuriosCompatImpl {
 
                 SlotContext slotContext = new SlotContext(slotType, player, i, false, true);
 
-                if (stack.getItem() instanceof ICurioItem curioItem) {
-                    ResourceLocation id = ResourceLocation.fromNamespaceAndPath("curios", slotType + "_" + i);
-                    Multimap<Holder<Attribute>, AttributeModifier> modifiers =
-                            curioItem.getAttributeModifiers(slotContext, id, stack);
+                ResourceLocation id = ResourceLocation.fromNamespaceAndPath("curios", slotType + "_" + i);
+                Multimap<Holder<Attribute>, AttributeModifier> modifiers = CuriosApi.getAttributeModifiers(slotContext, id, stack);
 
-                    for (Map.Entry<Holder<Attribute>, AttributeModifier> modEntry : modifiers.entries()) {
-                        Holder<Attribute> attribute = modEntry.getKey();
-                        AttributeModifier modifier = modEntry.getValue();
-                        ResourceLocation rawId = modifier.id();
+                for (Map.Entry<Holder<Attribute>, AttributeModifier> modEntry : modifiers.entries()) {
+                    Holder<Attribute> attribute = modEntry.getKey();
+                    AttributeModifier modifier = modEntry.getValue();
+                    ResourceLocation rawId = modifier.id();
 
-                        results.add(new CuriosCompat.CurioModifierSource(
-                                stack,
-                                modifier,
-                                attribute,
-                                rawId,
-                                slotType
-                        ));
-                    }
+                    results.add(new CuriosCompat.CurioModifierSource(
+                            stack,
+                            modifier,
+                            attribute,
+                            rawId,
+                            slotType
+                    ));
                 }
             }
         }

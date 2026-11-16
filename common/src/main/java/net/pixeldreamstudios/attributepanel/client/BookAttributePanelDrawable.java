@@ -446,7 +446,7 @@ class BookAttributePanelDrawable {
                 }
 
                 for (EquipmentSlot slot : EquipmentSlot.values()) {
-                    ItemStack stack = player.getSlot(slot.getIndex()).get();
+                    ItemStack stack = player.getItemBySlot(slot);
                     if (stack.isEmpty()) continue;
 
                     final boolean[] matched = {false};
