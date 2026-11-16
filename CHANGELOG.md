@@ -1,2 +1,1 @@
-Improved GUI rendering so that resourcepacks can now animate panel's textures
-Added Origins Compat to Fabric
+1.21.11 Port thanks to @shisno2

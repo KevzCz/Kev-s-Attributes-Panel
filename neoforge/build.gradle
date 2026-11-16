@@ -41,7 +41,7 @@ dependencies {
     common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
     shadowBundle project(path: ':common', configuration: 'transformProductionNeoForge')
 
-    modCompileOnly "curse.maven:curios-309927:6529130"
+    modCompileOnly "maven.modrinth:curios:14.0.0+1.21.11"
 
     modCompileOnly "curse.maven:spell-engine-807653:7396347"
     modCompileOnly "curse.maven:cloth-config-348521:5729127"

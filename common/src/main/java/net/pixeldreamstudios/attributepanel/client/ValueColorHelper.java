@@ -6,6 +6,13 @@ import net.pixeldreamstudios.attributepanel.config.*;
 
 public class ValueColorHelper {
 
+    private static final int ALPHA_BITS = 0xFC000000;
+    private static final int OPAQUE = 0xFF000000;
+
+    public static int textColor(int color) {
+        return (color & ALPHA_BITS) == 0 ? color | OPAQUE : color;
+    }
+
     public static int getValueColor(StatEntry stat) {
         if (!AttributesPanelConfig.INSTANCE.enableColorCodedValues) {
             return 0xFFFFFF;

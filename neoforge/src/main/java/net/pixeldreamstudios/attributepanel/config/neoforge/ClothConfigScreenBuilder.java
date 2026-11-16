@@ -1,6 +1,7 @@
 package net.pixeldreamstudios.attributepanel.config.neoforge;
 
 
+import net.pixeldreamstudios.attributepanel.client.ValueColorHelper;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -125,14 +126,14 @@ public class ClothConfigScreenBuilder {
         cat.addEntry(eb.startStrList(
                         Component.literal("Positive when higher (color coding)"),
                         new ArrayList<>(AttributesPanelConfig.INSTANCE.positiveWhenHigher))
-                .setTooltip(Component.literal("Attribute IDs that show green when increased, red when decreased.\nExample: minecraft:generic.attack_damage"))
+                .setTooltip(Component.literal("Attribute IDs that show green when increased, red when decreased.\nExample: minecraft:attack_damage"))
                 .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.positiveWhenHigher = list)
                 .build());
 
         cat.addEntry(eb.startStrList(
                         Component.literal("Positive when lower (color coding)"),
                         new ArrayList<>(AttributesPanelConfig.INSTANCE.positiveWhenLower))
-                .setTooltip(Component.literal("Attribute IDs that show green when decreased, red when increased.\nExample: minecraft:generic.gravity"))
+                .setTooltip(Component.literal("Attribute IDs that show green when decreased, red when increased.\nExample: minecraft:gravity"))
                 .setSaveConsumer(list -> AttributesPanelConfig.INSTANCE.positiveWhenLower = list)
                 .build());
 
@@ -345,7 +346,7 @@ public class ClothConfigScreenBuilder {
             rows.add(eb.startStrList(Component.literal("Attributes (id or id | icon)"), attrRows)
                     .setTooltip(Component.literal("""
                             Each line:  
-                            • Exact id:    minecraft:generic.attack_damage
+                            • Exact id:    minecraft:attack_damage
                             Optional icon after a pipe: 
                             • spell_engine:crit_chance | kevs_attributes_panel:textures/icons/crit.png
                             """))
@@ -438,7 +439,7 @@ public class ClothConfigScreenBuilder {
                            int mouseX, int mouseY, boolean hovered, float delta) {
             var tr = Minecraft.getInstance().font;
             if (label != null && !label.getString().isEmpty()) {
-                ctx.drawString(tr, label, x, y + (entryHeight - tr.lineHeight) / 2, 0xFFFFFF, false);
+                ctx.drawString(tr, label, x, y + (entryHeight - tr.lineHeight) / 2, ValueColorHelper.textColor(0xFFFFFF), false);
             }
 
             int w = 120, h = entryHeight - 2;

@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class AttributesPanelConfig {
@@ -32,15 +33,19 @@ public class AttributesPanelConfig {
     public boolean enableSmoothValueTransition = false;
     public int valueTransitionDurationMs = 300;
 
-    public List<String> positiveWhenHigher = new ArrayList<>(List.of(
-            "minecraft:generic.attack_damage",
-            "minecraft:generic.attack_speed",
-            "minecraft:generic.armor",
-            "minecraft:generic.armor_toughness",
-            "minecraft:generic.max_health",
-            "minecraft:generic.movement_speed",
-            "minecraft:generic.luck"
-    ));
+    private static final String VANILLA_NAMESPACE = "minecraft:";
+    private static final List<String> LEGACY_VANILLA_PREFIXES = List.of("minecraft:generic.", "minecraft:player.", "minecraft:zombie.", "minecraft:horse.");
+    private static final List<String> DEFAULT_POSITIVE_WHEN_HIGHER = List.of(
+            "minecraft:attack_damage",
+            "minecraft:attack_speed",
+            "minecraft:armor",
+            "minecraft:armor_toughness",
+            "minecraft:max_health",
+            "minecraft:movement_speed",
+            "minecraft:luck"
+    );
+
+    public List<String> positiveWhenHigher = new ArrayList<>(DEFAULT_POSITIVE_WHEN_HIGHER);
 
     public List<String> positiveWhenLower = new ArrayList<>(List.of(
             "spell_engine:damage_taken"
@@ -101,15 +106,7 @@ public class AttributesPanelConfig {
                     INSTANCE.compact = CompactSettings.defaultPreset();
                 }
                 if (INSTANCE.positiveWhenHigher == null) {
-                    INSTANCE.positiveWhenHigher = new ArrayList<>(List.of(
-                            "minecraft:generic.attack_damage",
-                            "minecraft:generic.attack_speed",
-                            "minecraft:generic.armor",
-                            "minecraft:generic.armor_toughness",
-                            "minecraft:generic.max_health",
-                            "minecraft:generic.movement_speed",
-                            "minecraft:generic.luck"
-                    ));
+                    INSTANCE.positiveWhenHigher = new ArrayList<>(DEFAULT_POSITIVE_WHEN_HIGHER);
                 }
                 if (INSTANCE.positiveWhenLower == null) {
                     INSTANCE.positiveWhenLower = new ArrayList<>(List.of("spell_engine:damage_taken"));
@@ -134,6 +131,9 @@ public class AttributesPanelConfig {
                     INSTANCE.multiplierBase0Keywords = new ArrayList<>();
                 }
                 
+                if (INSTANCE.upgradeAttributeIds()) {
+                    save();
+                }
                 return;
             } catch (Exception e) {
                 System.err.println("[Kev's Attributes Panel] Failed to read config: " + e.getMessage());
@@ -149,6 +149,55 @@ public class AttributesPanelConfig {
         }
 
         save();
+    }
+
+    public static String currentAttributeId(String id) {
+        if (id == null) {
+            return null;
+        }
+        for (String prefix : LEGACY_VANILLA_PREFIXES) {
+            if (id.startsWith(prefix)) {
+                return VANILLA_NAMESPACE + id.substring(prefix.length());
+            }
+        }
+        return id;
+    }
+
+    private static boolean upgradeIds(List<String> ids) {
+        boolean changed = false;
+        if (ids == null) {
+            return false;
+        }
+        for (int index = 0; index < ids.size(); index++) {
+            String current = currentAttributeId(ids.get(index));
+            if (current != null && !current.equals(ids.get(index))) {
+                ids.set(index, current);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private boolean upgradeAttributeIds() {
+        boolean changed = false;
+        for (List<String> ids : Arrays.asList(positiveWhenHigher, positiveWhenLower, percentAttributes, percentAttributesBase100,
+                multiplierAttributesBase100, multiplierAttributesBase1, multiplierAttributesBase0)) {
+            changed |= upgradeIds(ids);
+        }
+        if (compact != null) {
+            changed |= upgradeIds(compact.globalBlacklist);
+            for (HeaderDef header : compact.headers == null ? List.<HeaderDef>of() : compact.headers) {
+                changed |= upgradeIds(header.blacklist);
+                for (AttributeSpec spec : header.attributes == null ? List.<AttributeSpec>of() : header.attributes) {
+                    String current = currentAttributeId(spec.id);
+                    if (current != null && !current.equals(spec.id)) {
+                        spec.id = current;
+                        changed = true;
+                    }
+                }
+            }
+        }
+        return changed;
     }
 
     public static void save() {
@@ -207,8 +256,8 @@ public class AttributesPanelConfig {
 
             HeaderDef offensive = new HeaderDef();
             offensive.header = "Offensive";
-            offensive.attributes.add(AttributeSpec.of("minecraft:generic.attack_damage", null));
-            offensive.attributes.add(AttributeSpec.of("minecraft:generic.attack_speed",  null));
+            offensive.attributes.add(AttributeSpec.of("minecraft:attack_damage", null));
+            offensive.attributes.add(AttributeSpec.of("minecraft:attack_speed",  null));
             offensive.attributes.add(AttributeSpec.of("ranged_weapon:damage",            null));
             offensive.attributes.add(AttributeSpec.of("ranged_weapon:haste",             null));
             offensive.attributes.add(AttributeSpec.of("critical_strike:chance",             null));
@@ -217,12 +266,12 @@ public class AttributesPanelConfig {
 
             HeaderDef defensive = new HeaderDef();
             defensive.header = "Defensive";
-            defensive.attributes.add(AttributeSpec.of("minecraft:generic.armor",                 null));
-            defensive.attributes.add(AttributeSpec.of("minecraft:generic.armor_toughness",      null));
-            defensive.attributes.add(AttributeSpec.of("minecraft:generic.max_health",           null));
-            defensive.attributes.add(AttributeSpec.of("minecraft:generic.movement_speed",       null));
-            defensive.attributes.add(AttributeSpec.of("minecraft:generic.luck",                 null));
-            defensive.attributes.add(AttributeSpec.of("minecraft:generic.knockback_resistance", null));
+            defensive.attributes.add(AttributeSpec.of("minecraft:armor",                 null));
+            defensive.attributes.add(AttributeSpec.of("minecraft:armor_toughness",      null));
+            defensive.attributes.add(AttributeSpec.of("minecraft:max_health",           null));
+            defensive.attributes.add(AttributeSpec.of("minecraft:movement_speed",       null));
+            defensive.attributes.add(AttributeSpec.of("minecraft:luck",                 null));
+            defensive.attributes.add(AttributeSpec.of("minecraft:knockback_resistance", null));
             defensive.attributes.add(AttributeSpec.of("spell_engine:evasion_chance",         null));
             s.headers.add(defensive);
 

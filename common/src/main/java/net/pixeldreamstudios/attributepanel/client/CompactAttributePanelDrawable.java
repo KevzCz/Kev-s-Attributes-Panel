@@ -1,6 +1,5 @@
 package net.pixeldreamstudios.attributepanel.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.ChatFormatting;
@@ -94,6 +93,10 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
     private static final Identifier INFO_ICON = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/info.png");
     private static final Identifier CHANGED = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/changed.png");
     private static final int INFO_ICON_SIZE = 12;
+    private static final Identifier SCROLLBAR_TRACK = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/scrollbar_track.png");
+    private static final Identifier SCROLLBAR_KNOB = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/scrollbar_knob.png");
+    private static final int SCROLLBAR_TRACK_COLOR = 0x66000000;
+    private static final int SCROLLBAR_KNOB_COLOR = 0xCCFFFFFF;
     private static final Identifier SEARCH_ICON = Identifier.fromNamespaceAndPath("kevs_attributes_panel", "textures/gui/search.png");
     private static final int SEARCH_ICON_SIZE = 12;
     private boolean searchVisible = false;
@@ -418,7 +421,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             }
 
             int drawX = textX - textScrollPx;
-            ctx.drawString(font, toShow, drawX, textY, color, false);
+            ctx.drawString(font, toShow, drawX, textY, ValueColorHelper.textColor(color), false);
 
             if (searchFocused) {
                 int caretDrawX = textX + caretPx - textScrollPx;
@@ -516,7 +519,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         List<FormattedCharSequence> lines = font.split(component, wrapWidth);
 
         for (FormattedCharSequence line : lines) {
-            ctx.drawString(font, line, x, y, colorMuted(), true);
+            ctx.drawString(font, line, x, y, ValueColorHelper.textColor(colorMuted()), true);
             y += font.lineHeight + 2;
         }
     }
@@ -2399,7 +2402,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             ctx.pose().scale(HEADER_FONT_SCALE, HEADER_FONT_SCALE);
             int drawX = (int) (x / HEADER_FONT_SCALE);
             int drawY = (int) (y / HEADER_FONT_SCALE);
-            ctx.drawString(font, header.headerText, drawX, drawY, colorHeader(), true);
+            ctx.drawString(font, header.headerText, drawX, drawY, ValueColorHelper.textColor(colorHeader()), true);
             ctx.pose().popMatrix();
             x += (int) Math.ceil(font.width(header.headerText) * HEADER_FONT_SCALE);
         }
@@ -2410,7 +2413,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             ctx.pose().scale(HEADER_FONT_SCALE, HEADER_FONT_SCALE);
             int drawX = (int) (x / HEADER_FONT_SCALE);
             int drawY = (int) (y / HEADER_FONT_SCALE);
-            ctx.drawString(font, missingMarker, drawX, drawY, colorMuted(), true);
+            ctx.drawString(font, missingMarker, drawX, drawY, ValueColorHelper.textColor(colorMuted()), true);
             ctx.pose().popMatrix();
         }
     }
@@ -2488,7 +2491,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                 ctx.pose().scale(fs, fs);
                 int drawX = (int) (drawXpx / fs);
                 int drawY = (int) (y / fs);
-                ctx.drawString(font, split.leadingIcon, drawX, drawY, 0xFFFFFF, true);
+                ctx.drawString(font, split.leadingIcon, drawX, drawY, ValueColorHelper.textColor(0xFFFFFF), true);
                 ctx.pose().popMatrix();
             } else if (statRow.icon != null) {
                 float s = fs * (ATTR_ICON_SIZE / (float) TEX_ICON_SRC_PX);
@@ -2499,8 +2502,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                 ctx.pose().scale(s, s);
                 int drawX = (int) Math.floor(drawXpx2 / s);
                 int drawY = (int) Math.floor((y - 1) / s);
-                ctx.blit(statRow.icon, drawX, drawY, 0, 0, TEX_ICON_SRC_PX, TEX_ICON_SRC_PX,
-                        TEX_ICON_SRC_PX, TEX_ICON_SRC_PX);
+                AnimatedTextures.blit(ctx, statRow.icon, drawX, drawY, TEX_ICON_SRC_PX, TEX_ICON_SRC_PX);
                 ctx.pose().popMatrix();
             } else if (statRow.bullet) {
                 int bx = iconLeft + Math.max(0, (iconColW() - BULLET_SIZE) / 2);
@@ -2516,7 +2518,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
             ctx.pose().scale(fs, fs);
             int nDrawX = (int) (nameLeft / fs);
             int drawY = (int) (y / fs);
-            ctx.drawString(font, bonusText, nDrawX, drawY, colorBody(), true);
+            ctx.drawString(font, bonusText, nDrawX, drawY, ValueColorHelper.textColor(colorBody()), true);
             ctx.pose().popMatrix();
         } else {
             final int valueLeft = iconLeft + iconColW() + ICON_VALUE_GAP;
@@ -2529,7 +2531,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                 ctx.pose().scale(fs, fs);
                 int drawX = (int) (drawXpx / fs);
                 int drawY = (int) (y / fs);
-                ctx.drawString(font, split.leadingIcon, drawX, drawY, 0xFFFFFF, true);
+                ctx.drawString(font, split.leadingIcon, drawX, drawY, ValueColorHelper.textColor(0xFFFFFF), true);
                 ctx.pose().popMatrix();
 
             } else if (statRow.icon != null) {
@@ -2541,8 +2543,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
                 ctx.pose().scale(s, s);
                 int drawX = (int) Math.floor(drawXpx / s);
                 int drawY = (int) Math.floor((y - 1) / s);
-                ctx.blit(statRow.icon, drawX, drawY, 0, 0, TEX_ICON_SRC_PX, TEX_ICON_SRC_PX,
-                        TEX_ICON_SRC_PX, TEX_ICON_SRC_PX);
+                AnimatedTextures.blit(ctx, statRow.icon, drawX, drawY, TEX_ICON_SRC_PX, TEX_ICON_SRC_PX);
                 ctx.pose().popMatrix();
             } else if (statRow.bullet) {
                 int bx = iconLeft + Math.max(0, (iconColW() - BULLET_SIZE) / 2);
@@ -2574,10 +2575,10 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
 
             int vDrawX = (int) (valueLeft / fs);
             int drawY = (int) (y / fs);
-            ctx.drawString(font, valueStr, vDrawX, drawY, valueColor, true);
+            ctx.drawString(font, valueStr, vDrawX, drawY, ValueColorHelper.textColor(valueColor), true);
 
             int nDrawX = (int) (nameLeft / fs);
-            ctx.drawString(font, split.cleanName, nDrawX, drawY, colorBody(), true);
+            ctx.drawString(font, split.cleanName, nDrawX, drawY, ValueColorHelper.textColor(colorBody()), true);
 
             ctx.pose().popMatrix();
         }
@@ -2630,8 +2631,8 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         ctx.pose().pushMatrix();
         ctx.pose().scale(fs, fs);
         int drawY = (int) (y / fs);
-        ctx.drawString(font, name, (int) (nameLeft / fs), drawY, colorBody(), true);
-        ctx.drawString(font, duration, (int) (durationLeft / fs), drawY, colorMuted(), true);
+        ctx.drawString(font, name, (int) (nameLeft / fs), drawY, ValueColorHelper.textColor(colorBody()), true);
+        ctx.drawString(font, duration, (int) (durationLeft / fs), drawY, ValueColorHelper.textColor(colorMuted()), true);
         ctx.pose().popMatrix();
     }
 
@@ -2811,15 +2812,12 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         drawScrollbarPart(ctx, SCROLLBAR_KNOB, left, g.knobY, right - left, g.knobH, SCROLLBAR_KNOB_COLOR);
     }
 
-    private static void drawScrollbarPart(GuiGraphics ctx, ResourceLocation texture, int x, int y, int width, int height, int fallbackColor) {
+    private static void drawScrollbarPart(GuiGraphics ctx, Identifier texture, int x, int y, int width, int height, int fallbackColor) {
         if (!AnimatedTextures.exists(texture)) {
             ctx.fill(x, y, x + width, y + height, fallbackColor);
             return;
         }
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
         AnimatedTextures.blitScaled(ctx, texture, x, y, width, height);
-        RenderSystem.disableBlend();
     }
 
     private BarGeom computeBarGeom() {
@@ -2998,7 +2996,7 @@ public class CompactAttributePanelDrawable implements Renderable, GuiEventListen
         Font font = root.mc().font;
         int textColor = cooldownFill >= 1f ? 0xFFFFFFFF : lerpArgb(0xFF888888, 0xFFFFFFFF, cooldownFill);
         int textY = y + (h - font.lineHeight) / 2 + 1;
-        ctx.drawString(font, label, x + IMPRINTS_PLATE_PAD_X, textY, textColor, true);
+        ctx.drawString(font, label, x + IMPRINTS_PLATE_PAD_X, textY, ValueColorHelper.textColor(textColor), true);
     }
 
     private static int plateLighten(int argb, float amt) {

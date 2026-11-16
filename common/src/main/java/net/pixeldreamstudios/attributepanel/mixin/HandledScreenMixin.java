@@ -124,7 +124,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
                 pose.scale(scale, scale);
                 pose.rotate((float) Math.toRadians(rotation));
                 pose.translate(-iconSize / 2f, -iconSize / 2f);
-                context.blit(ATTRIBUTE_BOOK, 0, 0, 0, 0, iconSize, iconSize, 9, 9);
+                AnimatedTextures.blit(context, ATTRIBUTE_BOOK, 0, 0, iconSize, iconSize);
                 pose.popMatrix();
             } else {
                 AnimatedTextures.blit(context, ATTRIBUTE_BOOK, buttonX, buttonY, iconSize, iconSize);

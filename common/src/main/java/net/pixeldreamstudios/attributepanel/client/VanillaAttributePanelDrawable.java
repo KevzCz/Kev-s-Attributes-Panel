@@ -31,7 +31,7 @@ class VanillaAttributePanelDrawable {
         if (root.getShowOnlyChanged() && root.getCachedStats().isEmpty()) {
             String noStatsText = "No changed attributes";
             int textWidth = font.width(noStatsText);
-            context.drawString(font, noStatsText, root.left() + (root.panelWidth() - textWidth) / 2, root.top() + 8, 0xAAAAAA, false);
+            context.drawString(font, noStatsText, root.left() + (root.panelWidth() - textWidth) / 2, root.top() + 8, ValueColorHelper.textColor(0xAAAAAA), false);
             drawVanillaButtons(context, font, mouseX, mouseY, root.top() + root.panelHeight() - 12);
             return;
         }
@@ -77,15 +77,15 @@ class VanillaAttributePanelDrawable {
             int nameY = yOffset + (rowHeight - 8) / 2;
 
             if (split.hasIcon()) {
-                context.drawString(font, split.leadingIcon, nameX, nameY, 0x3A2F23, false);
+                context.drawString(font, split.leadingIcon, nameX, nameY, ValueColorHelper.textColor(0x3A2F23), false);
                 nameX += font.width(split.leadingIcon + " ");
             }
 
             if (bottomLine == null) {
-                context.drawString(font, topLine, nameX, nameY, 0x3A2F23, false);
+                context.drawString(font, topLine, nameX, nameY, ValueColorHelper.textColor(0x3A2F23), false);
             } else {
-                context.drawString(font, topLine, nameX, yOffset + 4, 0x3A2F23, false);
-                context.drawString(font, bottomLine, nameX, yOffset + 12, 0x6D5C48, false);
+                context.drawString(font, topLine, nameX, yOffset + 4, ValueColorHelper.textColor(0x3A2F23), false);
+                context.drawString(font, bottomLine, nameX, yOffset + 12, ValueColorHelper.textColor(0x6D5C48), false);
             }
 
             String valueStr;
@@ -100,7 +100,7 @@ class VanillaAttributePanelDrawable {
             valueStr += stat.isChanged() ? (stat.current() > stat.base() ? " ↑" : " ↓") : "";
 
             int valueY = yOffset + (rowHeight - 8) / 2;
-            context.drawString(font, valueStr, root.left() + root.panelWidth() - 4 - font.width(valueStr), valueY, color, false);
+            context.drawString(font, valueStr, root.left() + root.panelWidth() - 4 - font.width(valueStr), valueY, ValueColorHelper.textColor(color), false);
 
             context.fill(root.left(), yOffset + rowHeight - 1, root.left() + root.panelWidth(), yOffset + rowHeight, 0xFF444444);
 
@@ -178,11 +178,11 @@ class VanillaAttributePanelDrawable {
         int nextX = centerX + checkWidth / 2 + spacing;
 
         context.drawString(font, prevText, prevX, btnY,
-                AttributePanelDrawable.mouseIn(mouseX, mouseY, prevX, btnY, prevWidth, buttonHeight) ? 0xFFFFFF : 0xAAAAAA, false);
+                ValueColorHelper.textColor(AttributePanelDrawable.mouseIn(mouseX, mouseY, prevX, btnY, prevWidth, buttonHeight) ? 0xFFFFFF : 0xAAAAAA), false);
         context.drawString(font, checkLabel, checkX, btnY,
-                AttributePanelDrawable.mouseIn(mouseX, mouseY, checkX, btnY, checkWidth, buttonHeight) ? 0xFFFFFF : 0xAAAAAA, false);
+                ValueColorHelper.textColor(AttributePanelDrawable.mouseIn(mouseX, mouseY, checkX, btnY, checkWidth, buttonHeight) ? 0xFFFFFF : 0xAAAAAA), false);
         context.drawString(font, nextText, nextX, btnY,
-                AttributePanelDrawable.mouseIn(mouseX, mouseY, nextX, btnY, nextWidth, buttonHeight) ? 0xFFFFFF : 0xAAAAAA, false);
+                ValueColorHelper.textColor(AttributePanelDrawable.mouseIn(mouseX, mouseY, nextX, btnY, nextWidth, buttonHeight) ? 0xFFFFFF : 0xAAAAAA), false);
     }
 
     private void drawVanillaTooltipButton(GuiGraphics context, Font font, int hoverIndex, int mouseX, int mouseY, int rowHeight, int padding) {

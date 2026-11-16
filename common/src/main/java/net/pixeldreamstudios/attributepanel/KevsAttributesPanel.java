@@ -1,7 +1,10 @@
 package net.pixeldreamstudios.attributepanel;
 
+import dev.architectury.platform.Platform;
+import dev.architectury.utils.Env;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.pixeldreamstudios.attributepanel.client.AnimatedTextures;
 import net.pixeldreamstudios.attributepanel.config.AttributesPanelConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +19,9 @@ public final class KevsAttributesPanel {
 
     public static void init() {
         trackVisibleAttributes();
+        if (Platform.getEnvironment() == Env.CLIENT) {
+            AnimatedTextures.registerReloadListener();
+        }
     }
 
     private static void trackVisibleAttributes() {

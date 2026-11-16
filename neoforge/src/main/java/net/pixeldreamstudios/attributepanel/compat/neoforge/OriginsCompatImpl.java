@@ -1,6 +1,6 @@
 package net.pixeldreamstudios.attributepanel.compat.neoforge;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.pixeldreamstudios.attributepanel.compat.OriginsCompat;
 
@@ -11,7 +11,7 @@ public final class OriginsCompatImpl {
     private OriginsCompatImpl() {
     }
 
-    public static Optional<OriginsCompat.Source> findSource(Player player, ResourceLocation modifierId) {
+    public static Optional<OriginsCompat.Source> findSource(Player player, Identifier modifierId) {
         return Optional.empty();
     }
 }

@@ -312,7 +312,7 @@ public class AttributePanelDrawable implements Renderable, GuiEventListener, Nar
             }
 
             int textX = drawX + iconOffset;
-            context.drawString(font, lines.get(i), textX, lineY + 2, 0xFFFFFF, false);
+            context.drawString(font, lines.get(i), textX, lineY + 2, ValueColorHelper.textColor(0xFFFFFF), false);
         }
     }
 

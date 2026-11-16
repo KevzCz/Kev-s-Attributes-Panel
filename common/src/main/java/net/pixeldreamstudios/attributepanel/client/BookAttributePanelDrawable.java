@@ -68,7 +68,7 @@ class BookAttributePanelDrawable {
             String noStatsText = "No changed attributes";
             int textWidth = font.width(noStatsText);
             drawBookButtons(context, font, mouseX, mouseY, root.top() + root.panelHeight() - 20);
-            context.drawString(font, noStatsText, root.left() + (root.panelWidth() - textWidth) / 2 + 5, root.top() + 20, 0x3F3F3F, false);
+            context.drawString(font, noStatsText, root.left() + (root.panelWidth() - textWidth) / 2 + 5, root.top() + 20, ValueColorHelper.textColor(0x3F3F3F), false);
             return;
         }
 
@@ -115,11 +115,11 @@ class BookAttributePanelDrawable {
 
             if (bottomLine == null) {
                 String displayText = split.hasIcon() ? split.leadingIcon + " " + topLine : topLine;
-                context.drawString(font, displayText, nameX, nameY, 0x3A2F23, false);
+                context.drawString(font, displayText, nameX, nameY, ValueColorHelper.textColor(0x3A2F23), false);
             } else {
                 String displayTop = split.hasIcon() ? split.leadingIcon + " " + topLine : topLine;
-                context.drawString(font, displayTop, nameX, yOffset + 4, 0x3A2F23, false);
-                context.drawString(font, bottomLine, nameX, yOffset + 12, 0x6D5C48, false);
+                context.drawString(font, displayTop, nameX, yOffset + 4, ValueColorHelper.textColor(0x3A2F23), false);
+                context.drawString(font, bottomLine, nameX, yOffset + 12, ValueColorHelper.textColor(0x6D5C48), false);
             }
 
             String valueStr;
@@ -133,7 +133,7 @@ class BookAttributePanelDrawable {
             int color = stat.isChanged() ? (stat.current() > stat.base() ? 0x55FF55 : 0xFF5555) : 0xAAAAAA;
             valueStr += stat.isChanged() ? (stat.current() > stat.base() ? " ↑" : " ↓") : "";
 
-            context.drawString(font, valueStr, valueX - font.width(valueStr), nameY, color, false);
+            context.drawString(font, valueStr, valueX - font.width(valueStr), nameY, ValueColorHelper.textColor(color), false);
 
             if (mouseX >= root.left() && mouseX <= root.left() + root.panelWidth() && mouseY >= yOffset && mouseY <= yOffset + rowHeight) {
                 hoverIndex = i;
@@ -224,11 +224,11 @@ class BookAttributePanelDrawable {
         int nextX = checkX + checkWidth + spacing;
 
         context.drawString(font, prevText, prevX, btnY,
-                AttributePanelDrawable.mouseIn(mouseX, mouseY, prevX, btnY, prevWidth, buttonHeight) ? 0x3A2F23 : 0xAAAAAA, false);
+                ValueColorHelper.textColor(AttributePanelDrawable.mouseIn(mouseX, mouseY, prevX, btnY, prevWidth, buttonHeight) ? 0x3A2F23 : 0xAAAAAA), false);
         context.drawString(font, checkLabel, checkX, btnY,
-                AttributePanelDrawable.mouseIn(mouseX, mouseY, checkX, btnY, checkWidth, buttonHeight) ? 0x3A2F23 : 0xAAAAAA, false);
+                ValueColorHelper.textColor(AttributePanelDrawable.mouseIn(mouseX, mouseY, checkX, btnY, checkWidth, buttonHeight) ? 0x3A2F23 : 0xAAAAAA), false);
         context.drawString(font, nextText, nextX, btnY,
-                AttributePanelDrawable.mouseIn(mouseX, mouseY, nextX, btnY, nextWidth, buttonHeight) ? 0x3A2F23 : 0xAAAAAA, false);
+                ValueColorHelper.textColor(AttributePanelDrawable.mouseIn(mouseX, mouseY, nextX, btnY, nextWidth, buttonHeight) ? 0x3A2F23 : 0xAAAAAA), false);
     }
 
     private void drawBookTooltipButton(GuiGraphics context, Font font, int hoverIndex, int mouseX, int mouseY, int rowHeight, int padding) {

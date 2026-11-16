@@ -9,6 +9,8 @@
     "CreativeSelectedTabAccessor",
     "GuiGraphicsTooltipMixin",
     "HandledScreenMixin",
+    "LivingEntityEquipmentInvoker",
+    "LocalPlayerEquipmentMixin",
     "MouseScrollMixin"
   ],
   "injectors": {

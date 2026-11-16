@@ -1,21 +1,24 @@
 package net.pixeldreamstudios.attributepanel.client;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import dev.architectury.registry.ReloadListenerRegistry;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.SharedConstants;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.client.resources.metadata.animation.AnimationFrame;
 import net.minecraft.client.resources.metadata.animation.AnimationMetadataSection;
 import net.minecraft.client.resources.metadata.animation.FrameSize;
 import net.minecraft.client.resources.metadata.gui.GuiMetadataSection;
 import net.minecraft.client.resources.metadata.gui.GuiSpriteScaling;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ReloadableResourceManager;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.util.Util;
 import net.pixeldreamstudios.attributepanel.KevsAttributesPanel;
 
 import java.io.IOException;
@@ -34,9 +37,9 @@ public final class AnimatedTextures {
     private static final int CHANNEL_BITS = 8;
     private static final int CHANNEL_MASK = 255;
     private static final int PIXEL_BITS = 32;
-    private static final Map<ResourceLocation, Optional<Animation>> CACHE = new HashMap<>();
-    private static final Map<ResourceLocation, Optional<GuiSpriteScaling>> SCALING = new HashMap<>();
-    private static boolean listenerRegistered = false;
+    private static final Map<Identifier, Optional<Animation>> CACHE = new HashMap<>();
+    private static final Map<Identifier, Optional<GuiSpriteScaling>> SCALING = new HashMap<>();
+    private static final String RELOAD_LISTENER = "animated_textures";
     private static long frameTick;
 
     private AnimatedTextures() {
@@ -46,11 +49,11 @@ public final class AnimatedTextures {
         frameTick = Util.getMillis() / MILLIS_PER_TICK;
     }
 
-    public static boolean exists(ResourceLocation texture) {
+    public static boolean exists(Identifier texture) {
         return scalingFor(texture).isPresent();
     }
 
-    public static void blitScaled(GuiGraphics ctx, ResourceLocation texture, int x, int y, int width, int height) {
+    public static void blitScaled(GuiGraphics ctx, Identifier texture, int x, int y, int width, int height) {
         if (width <= 0 || height <= 0) {
             return;
         }
@@ -64,7 +67,7 @@ public final class AnimatedTextures {
         }
     }
 
-    private static void nineSlice(GuiGraphics ctx, ResourceLocation texture, int x, int y, int width, int height, GuiSpriteScaling.NineSlice slice) {
+    private static void nineSlice(GuiGraphics ctx, Identifier texture, int x, int y, int width, int height, GuiSpriteScaling.NineSlice slice) {
         GuiSpriteScaling.NineSlice.Border border = slice.border();
         int texWidth = slice.width();
         int texHeight = slice.height();
@@ -94,7 +97,7 @@ public final class AnimatedTextures {
         tile(ctx, texture, innerX, innerY, innerWidth, innerHeight, border.left(), border.top(), texInnerWidth, texInnerHeight, texWidth, texHeight);
     }
 
-    private static void tile(GuiGraphics ctx, ResourceLocation texture, int x, int y, int width, int height, int u, int v, int regionWidth, int regionHeight, int texWidth, int texHeight) {
+    private static void tile(GuiGraphics ctx, Identifier texture, int x, int y, int width, int height, int u, int v, int regionWidth, int regionHeight, int texWidth, int texHeight) {
         if (width <= 0 || height <= 0 || regionWidth <= 0 || regionHeight <= 0) {
             return;
         }
@@ -106,18 +109,17 @@ public final class AnimatedTextures {
         }
     }
 
-    private static void region(GuiGraphics ctx, ResourceLocation texture, int x, int y, int width, int height, int u, int v, int texWidth, int texHeight) {
+    private static void region(GuiGraphics ctx, Identifier texture, int x, int y, int width, int height, int u, int v, int texWidth, int texHeight) {
         if (width > 0 && height > 0) {
             blit(ctx, texture, x, y, width, height, u, v, width, height, texWidth, texHeight);
         }
     }
 
-    private static Optional<GuiSpriteScaling> scalingFor(ResourceLocation texture) {
-        registerListener();
+    private static Optional<GuiSpriteScaling> scalingFor(Identifier texture) {
         return SCALING.computeIfAbsent(texture, AnimatedTextures::loadScaling);
     }
 
-    private static Optional<GuiSpriteScaling> loadScaling(ResourceLocation texture) {
+    private static Optional<GuiSpriteScaling> loadScaling(Identifier texture) {
         Optional<Resource> resource = Minecraft.getInstance().getResourceManager().getResource(texture);
         if (resource.isEmpty()) {
             return Optional.empty();
@@ -130,14 +132,14 @@ public final class AnimatedTextures {
         }
     }
 
-    public static void blit(GuiGraphics ctx, ResourceLocation texture, int x, int y, int width, int height) {
+    public static void blit(GuiGraphics ctx, Identifier texture, int x, int y, int width, int height) {
         blit(ctx, texture, x, y, width, height, 0, 0, width, height, width, height);
     }
 
-    public static void blit(GuiGraphics ctx, ResourceLocation texture, int x, int y, int width, int height, int u, int v, int regionWidth, int regionHeight, int texWidth, int texHeight) {
+    public static void blit(GuiGraphics ctx, Identifier texture, int x, int y, int width, int height, int u, int v, int regionWidth, int regionHeight, int texWidth, int texHeight) {
         Optional<Animation> found = animationFor(texture);
         if (found.isEmpty()) {
-            ctx.blit(texture, x, y, width, height, u, v, regionWidth, regionHeight, texWidth, texHeight);
+            ctx.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height, regionWidth, regionHeight, texWidth, texHeight);
             return;
         }
 
@@ -153,28 +155,22 @@ public final class AnimatedTextures {
             if (animation.blended().isPresent()) {
                 Frame next = animation.frames().get((i + 1) % animation.frames().size());
                 animation.blended().get().update(animation, frame, next, (int) position);
-                ctx.blit(animation.id(), x, y, width, height, u, v, regionWidth, regionHeight, texWidth, texHeight);
+                ctx.blit(RenderPipelines.GUI_TEXTURED, animation.id(), x, y, u, v, width, height, regionWidth, regionHeight, texWidth, texHeight);
             } else {
-                ctx.blit(animation.id(), x, y, width, height, u + animation.column(frame.index()) * texWidth, v + animation.row(frame.index()) * texHeight,
-                        regionWidth, regionHeight, texWidth * animation.columns(), texHeight * animation.rows());
+                ctx.blit(RenderPipelines.GUI_TEXTURED, animation.id(), x, y, u + animation.column(frame.index()) * texWidth, v + animation.row(frame.index()) * texHeight,
+                        width, height, regionWidth, regionHeight, texWidth * animation.columns(), texHeight * animation.rows());
             }
             return;
         }
     }
 
-    private static Optional<Animation> animationFor(ResourceLocation texture) {
-        registerListener();
+    private static Optional<Animation> animationFor(Identifier texture) {
         return CACHE.computeIfAbsent(texture, AnimatedTextures::load);
     }
 
-    private static void registerListener() {
-        if (listenerRegistered) {
-            return;
-        }
-        if (Minecraft.getInstance().getResourceManager() instanceof ReloadableResourceManager manager) {
-            manager.registerReloadListener((ResourceManagerReloadListener) resources -> clear());
-        }
-        listenerRegistered = true;
+    public static void registerReloadListener() {
+        ReloadListenerRegistry.register(PackType.CLIENT_RESOURCES, (ResourceManagerReloadListener) resources -> clear(),
+                Identifier.fromNamespaceAndPath(KevsAttributesPanel.MOD_ID, RELOAD_LISTENER));
     }
 
     private static void clear() {
@@ -188,14 +184,14 @@ public final class AnimatedTextures {
         Minecraft.getInstance().getTextureManager().release(animation.id());
     }
 
-    private static Optional<Animation> load(ResourceLocation texture) {
+    private static Optional<Animation> load(Identifier texture) {
         Optional<Resource> resource = Minecraft.getInstance().getResourceManager().getResource(texture);
         if (resource.isEmpty()) {
             return Optional.empty();
         }
 
         try {
-            Optional<AnimationMetadataSection> section = resource.get().metadata().getSection(AnimationMetadataSection.SERIALIZER);
+            Optional<AnimationMetadataSection> section = resource.get().metadata().getSection(AnimationMetadataSection.TYPE);
             if (section.isEmpty()) {
                 return Optional.empty();
             }
@@ -208,7 +204,7 @@ public final class AnimatedTextures {
         }
     }
 
-    private static Optional<Animation> build(ResourceLocation texture, AnimationMetadataSection section, NativeImage image) {
+    private static Optional<Animation> build(Identifier texture, AnimationMetadataSection section, NativeImage image) {
         FrameSize size = section.calculateFrameSize(image.getWidth(), image.getHeight());
         if (size.width() <= 0 || size.height() <= 0 || image.getWidth() % size.width() != 0 || image.getHeight() % size.height() != 0) {
             KevsAttributesPanel.LOGGER.warn("Animation frame size {}x{} does not fit {} ({}x{})", size.width(), size.height(), texture, image.getWidth(), image.getHeight());
@@ -221,16 +217,18 @@ public final class AnimatedTextures {
         int frameCount = columns * rows;
 
         List<Frame> frames = new ArrayList<>();
-        section.forEachFrame((index, time) -> {
+        for (AnimationFrame entry : section.frames().orElse(List.of())) {
+            int index = entry.index();
+            int time = entry.timeOr(section.defaultFrameTime());
             if (index >= 0 && index < frameCount && time > 0) {
                 frames.add(new Frame(index, time));
             } else {
                 KevsAttributesPanel.LOGGER.warn("Skipping invalid animation frame {} (time {}) in {}", index, time, texture);
             }
-        });
+        }
         if (frames.isEmpty()) {
             for (int index = 0; index < frameCount; index++) {
-                frames.add(new Frame(index, section.getDefaultFrameTime()));
+                frames.add(new Frame(index, section.defaultFrameTime()));
             }
         }
 
@@ -241,15 +239,15 @@ public final class AnimatedTextures {
             return Optional.empty();
         }
 
+        Identifier id = Identifier.fromNamespaceAndPath(KevsAttributesPanel.MOD_ID, OWN_PREFIX + texture.getNamespace() + PATH_SEPARATOR + texture.getPath());
         DynamicTexture own;
         Optional<Blended> blended = Optional.empty();
-        if (section.isInterpolatedFrames()) {
-            own = new DynamicTexture(size.width(), size.height(), false);
+        if (section.interpolatedFrames()) {
+            own = new DynamicTexture(id::toString, size.width(), size.height(), false);
             blended = Optional.of(new Blended(image, own));
         } else {
-            own = new DynamicTexture(image);
+            own = new DynamicTexture(id::toString, image);
         }
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(KevsAttributesPanel.MOD_ID, OWN_PREFIX + texture.getNamespace() + PATH_SEPARATOR + texture.getPath());
         Minecraft.getInstance().getTextureManager().register(id, own);
         return Optional.of(new Animation(id, columns, rows, size.width(), size.height(), List.copyOf(frames), totalTime, blended));
     }
@@ -257,7 +255,7 @@ public final class AnimatedTextures {
     private record Frame(int index, int time) {
     }
 
-    private record Animation(ResourceLocation id, int columns, int rows, int frameWidth, int frameHeight, List<Frame> frames, int totalTime, Optional<Blended> blended) {
+    private record Animation(Identifier id, int columns, int rows, int frameWidth, int frameHeight, List<Frame> frames, int totalTime, Optional<Blended> blended) {
         int column(int index) {
             return index % columns;
         }
@@ -293,7 +291,7 @@ public final class AnimatedTextures {
             int toY = animation.row(to.index()) * animation.frameHeight();
             for (int y = 0; y < animation.frameHeight(); y++) {
                 for (int x = 0; x < animation.frameWidth(); x++) {
-                    target.setPixelRGBA(x, y, mix(source.getPixelRGBA(fromX + x, fromY + y), source.getPixelRGBA(toX + x, toY + y), step, from.time()));
+                    target.setPixel(x, y, mix(source.getPixel(fromX + x, fromY + y), source.getPixel(toX + x, toY + y), step, from.time()));
                 }
             }
             texture.upload();
